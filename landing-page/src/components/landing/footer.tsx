@@ -25,7 +25,7 @@ const Footer = () => {
                     <div className="flex flex-col items-start w-full sm:max-w-xs">
 
                         <div className="flex items-center gap-2">
-                            <Icons.icon className="w-5 h-5" />
+                            <Icons.icon className="w-5 h-5 animate-logo-spin" />
                             <span className="text-xl font-medium">
                                 ProdMate
                             </span>

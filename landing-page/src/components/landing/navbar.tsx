@@ -174,7 +174,7 @@ const Navbar = () => {
                     <div className="flex items-center justify-between w-full relative">
                         <div className="flex items-center flex-1 lg:flex-none">
                             <Link href="/" className="text-lg font-semibold text-foreground transition-transform hover:scale-105 duration-300 ease-out">
-                                <Icons.icon className="w-auto h-7 md:h-8 drop-shadow-md" />
+                                <Icons.icon className="w-auto h-7 md:h-8 drop-shadow-md animate-logo-spin" />
                             </Link>
                             <div className="items-center hidden ml-10 lg:flex">
                                 <DesktopMenu />

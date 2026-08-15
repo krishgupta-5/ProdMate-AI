@@ -106,7 +106,11 @@ const config = {
           "to": {
             transform: "rotate(360deg)"
           },
-        }
+        },
+        "logo-spin": {
+          "from": { transform: "rotate(0deg)" },
+          "to": { transform: "rotate(360deg)" },
+        },
       },
       animation: {
         "accordion-down": "accordion-down 0.2s ease-out",
@@ -117,6 +121,7 @@ const config = {
         "ripple": "ripple var(--duration,2s) ease calc(var(--i, 0)*.2s) infinite",
         "spotlight": "spotlight 2s ease .75s 1 forwards",
         "loading": "loading 0.6s linear infinite",
+        "logo-spin": "logo-spin 10s linear infinite",
       },
       spacing: {
         "1/8": "12.5%",
