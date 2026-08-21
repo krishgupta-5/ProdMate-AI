@@ -9,9 +9,9 @@ import { Particles } from "../ui/particles";
 
 const Footer = () => {
     return (
-        <footer className="w-full py-10 relative">
+        <footer className="w-full py-4 relative">
             <Container>
-                <Wrapper className="relative flex flex-col md:flex-row justify-between pb-32 overflow-hidden footer">
+                <Wrapper className="relative flex flex-col md:flex-row justify-between pb-10 overflow-hidden footer">
 
                     <Particles
                         className="absolute inset-0 w-full -z-10"
@@ -74,7 +74,7 @@ const Footer = () => {
 
             {/* Bottom Footer */}
             <Container>
-                <Wrapper className="pt-8 flex items-center justify-between border-t border-border/50">
+                <Wrapper className="pt-4 pb-2 flex items-center justify-between border-t border-border/50">
 
                     <p className="text-sm text-muted-foreground">
                         © {new Date().getFullYear()} ProdMate. All rights reserved.
