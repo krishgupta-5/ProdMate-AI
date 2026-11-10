@@ -59,7 +59,7 @@ export async function POST(req: Request) {
 
     // ── API keys ─────────────────────────────────────────────────────────────
     const groqApiKey = process.env.GROQ_CHAT_API_KEY || process.env.GROQ_API_KEY;
-    const groqModel = process.env.GROQ_CHAT_MODEL || 'llama-3.3-70b-versatile';
+    const groqModel = process.env.GROQ_CHAT_MODEL || 'openai/gpt-oss-120b';
     
     // We also need the standard Gemini API key for artifact modifications
     const fallbackApiKey = process.env.GROQ_API_KEY; // For ArtifactController backward compatibility
@@ -94,6 +94,7 @@ export async function POST(req: Request) {
           model: groqModel,
           messages,
           temperature: 0.7,
+          ...(groqModel.startsWith('openai/gpt-oss') ? { reasoning_effort: 'low', include_reasoning: false } : {}),
         }),
       });
 

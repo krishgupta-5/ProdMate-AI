@@ -44,7 +44,12 @@ export const SIDEBAR_LINKS: Link[] = [
     },
 ];
 
-export const CHAT_URL = "https://chat.prodmate.dev/";
+// Chat app URL. Override with NEXT_PUBLIC_CHAT_URL; defaults to the local chat app in dev.
+export const CHAT_URL =
+    process.env.NEXT_PUBLIC_CHAT_URL ||
+    (process.env.NODE_ENV === "development"
+        ? "http://localhost:3001/"
+        : "https://chat.prodmate.dev/");
 
 export const FOOTER_LINKS = [
     {

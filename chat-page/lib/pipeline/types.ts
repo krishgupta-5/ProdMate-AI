@@ -412,7 +412,8 @@ export const TOKEN_BUDGET: Record<ArtifactType, number> = {
 // Constants
 // ─────────────────────────────────────────────
 
-export const DEFAULT_MODEL = 'llama-3.1-8b-instant';
+// Groq retired the Llama 3.x models; override with GROQ_MODEL if needed.
+export const DEFAULT_MODEL = process.env.GROQ_MODEL || 'openai/gpt-oss-20b';
 export const MAX_RETRIES = 3;
 export const REQUEST_TIMEOUT_MS = 30_000;
 export const ACTIVEPIECES_TIMEOUT_MS = 45_000;
