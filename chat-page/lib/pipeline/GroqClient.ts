@@ -245,6 +245,11 @@ async function callGroqInternal(
             max_tokens: finalMaxTokens,
             top_p: config.topP,
             ...(config.stopTokens?.length ? { stop: config.stopTokens } : {}),
+            // gpt-oss models are reasoning models; keep reasoning short so it
+            // doesn't use up the max_tokens budget, and keep it out of the content.
+            ...(config.model.startsWith('openai/gpt-oss')
+              ? { reasoning_effort: 'low', include_reasoning: false }
+              : {}),
           }),
         }),
         config.timeoutMs,

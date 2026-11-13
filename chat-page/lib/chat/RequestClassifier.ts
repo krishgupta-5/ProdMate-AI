@@ -71,7 +71,8 @@ Respond strictly with a JSON object in the following format:
       messages,
       temperature: 0.1,
       max_tokens: 150,
-      response_format: { type: 'json_object' }
+      response_format: { type: 'json_object' },
+      ...(model.startsWith('openai/gpt-oss') ? { reasoning_effort: 'low', include_reasoning: false } : {})
     }),
   });
 
