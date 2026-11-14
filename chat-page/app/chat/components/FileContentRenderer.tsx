@@ -7,35 +7,16 @@ import ApiDesignViewer from "@/app/chat/components/ApiDesignViewer";
 import TestingPlanViewer from "@/app/chat/components/TestingPlanViewer";
 import CodeRenderer from "@/app/chat/components/CodeRenderer";
 import MarkdownRenderer from "@/app/chat/components/MarkdownRenderer";
-
-// ── ProdMate Design Tokens (ProdMate Minimal Palette) ──────────
-const T = {
-  bg: "#09090b",
-  codeBg: "#0d1117", // Deepest black for code block backgrounds
-  surface: "#121214",
-  border: "#27272a",
-  text: "#ededed",
-  textMuted: "#a1a1aa",
-  font: "var(--font-satoshi), system-ui, -apple-system, sans-serif",
-  mono: '"Geist Mono", var(--font-mono, monospace), ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace',
-};
+import { MARKDOWN_LANGS } from "@/app/chat/components/artifacts";
 
 interface Message {
   id: string;
-  role: "user" | "assistant";
-  content: string;
-  timestamp: string;
-  tools?: string[];
   file?: {
     name: string;
     language: string;
     content: string;
-    dbSchema?: {
-      mermaid: string;
-      diagram: string;
-    };
+    dbSchema?: { mermaid: string; diagram: string };
   };
-  options?: string[];
 }
 
 interface FileContentRendererProps {
@@ -43,96 +24,62 @@ interface FileContentRendererProps {
   markdownMode: Record<string, "code" | "preview">;
 }
 
-export default function FileContentRenderer({
-  msg,
-  markdownMode,
-}: FileContentRendererProps) {
+/** The body of an artifact card: picks the right viewer for the artifact's language. */
+export default function FileContentRenderer({ msg, markdownMode }: FileContentRendererProps) {
   if (!msg.file) return null;
   const { language, content } = msg.file;
 
   if (language === "dbschema") {
     return (
-      <div style={{ padding: "20px" }}>
-        <DbSchemaViewer
-          mermaid={msg.file.dbSchema?.mermaid ?? ""}
-          diagram={msg.file.dbSchema?.diagram ?? content}
-        />
+      <div className="p-4 sm:p-5">
+        <DbSchemaViewer mermaid={msg.file.dbSchema?.mermaid ?? ""} diagram={msg.file.dbSchema?.diagram ?? content} />
       </div>
     );
   }
 
   if (language === "image") {
     return (
-      <div style={{ display: "flex" }}>
-        <img
-          src={content}
-          alt={msg.file.name}
-          style={{
-            maxWidth: "100%",
-            maxHeight: "400px",
-            objectFit: "contain",
-            border: `1px solid ${T.border}`,
-            borderRadius: "6px",
-          }}
-        />
+      <div className="flex justify-center bg-pm-shell p-4">
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img src={content} alt={msg.file.name} className="max-h-[400px] max-w-full rounded-lg border border-pm-line object-contain" />
       </div>
     );
   }
 
-  if (language === "folder") return <div style={{ padding: "16px 20px" }}><FolderStructureViewer content={content} /></div>;
-  if (language === "apidesign") return <div style={{ padding: "20px" }}><ApiDesignViewer content={content} /></div>;
-  if (language === "testingplan") return <div style={{ padding: "20px" }}><TestingPlanViewer content={content} /></div>;
+  if (language === "folder")
+    return (
+      <div className="px-4 py-4 sm:px-5">
+        <FolderStructureViewer content={content} />
+      </div>
+    );
+  if (language === "apidesign")
+    return (
+      <div className="p-4 sm:p-5">
+        <ApiDesignViewer content={content} />
+      </div>
+    );
+  if (language === "testingplan")
+    return (
+      <div className="p-4 sm:p-5">
+        <TestingPlanViewer content={content} />
+      </div>
+    );
 
-  // Group all markdown-based artifact languages to prevent repetition
-  const markdownArtifacts = [
-    "deploymentguide",
-    "markdown",
-    "userstories",
-    "roadmap",
-    "costestimation",
-    "projecttimeline",
-    "riskanalysis",
-    "finalmarkdown",
-  ];
-
-  if (markdownArtifacts.includes(language)) {
+  if (MARKDOWN_LANGS.includes(language)) {
     return markdownMode[msg.id] === "code" ? (
-      <pre
-        style={{
-          margin: 0,
-          padding: "8px 0",
-          fontSize: "14px",
-          fontFamily: '"Geist Mono", monospace',
-          fontWeight: 400,
-          lineHeight: "1.65",
-          whiteSpace: "pre",
-          color: T.textMuted,
-          background: "transparent",
-          overflowX: "auto",
-        }}
-      >
+      <div className="bg-pm-code py-3">
         <CodeRenderer content={content} language="markdown" />
-      </pre>
+      </div>
     ) : (
-      <div style={{ margin: 0, padding: "20px", fontSize: "14px", lineHeight: "1.65", fontFamily: T.font }}>
+      <div className="px-5 py-5 sm:px-6">
         <MarkdownRenderer content={content} />
       </div>
     );
   }
 
-  // Default Code Block Wrapper (YAML, Docker, Config, etc.)
+  // YAML, Docker, config and anything else: highlighted source.
   return (
-    <div
-      style={{
-        margin: 0,
-        padding: "8px 0",
-        fontSize: "14px",
-        fontFamily: '"Geist Mono", monospace',
-        fontWeight: 400,
-        background: "transparent",
-        overflowX: "auto",
-      }}
-    >
+    <div className="bg-pm-code py-3">
       <CodeRenderer content={content} language={language} />
     </div>
   );

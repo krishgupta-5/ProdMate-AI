@@ -1,6 +1,9 @@
 "use client";
 
 import React from "react";
+import Link from "next/link";
+import { LogoMark } from "./Logo";
+import { Button, Modal } from "./ui";
 
 interface LoginModalProps {
   isOpen: boolean;
@@ -8,131 +11,31 @@ interface LoginModalProps {
   onLogin: () => void;
 }
 
-export default function LoginModal({
-  isOpen,
-  onClose,
-  onLogin,
-}: LoginModalProps) {
+export default function LoginModal({ isOpen, onClose, onLogin }: LoginModalProps) {
   if (!isOpen) return null;
 
   return (
-    <div
-      style={{
-        position: "fixed",
-        top: 0,
-        left: 0,
-        right: 0,
-        bottom: 0,
-        backgroundColor: "rgba(0, 0, 0, 0.8)",
-        display: "flex",
-        alignItems: "center",
-        justifyContent: "center",
-        zIndex: 1000,
-        backdropFilter: "blur(4px)",
-      }}
-      onClick={onClose}
-    >
-      <div
-        style={{
-          backgroundColor: "#09090b",
-          border: "1px solid rgba(255, 255, 255, 0.15)",
-          borderRadius: "12px",
-          padding: "32px",
-          maxWidth: "400px",
-          width: "90%",
-          boxShadow: "0 24px 48px rgba(0, 0, 0, 0.9)",
-          fontFamily: "var(--font-satoshi), system-ui, -apple-system, sans-serif",
-        }}
-        onClick={(e) => e.stopPropagation()}
-      >
-        <div
-          style={{
-            color: "#EAEAEA",
-            fontSize: "18px",
-            fontWeight: 600,
-            marginBottom: "16px",
-            fontFamily: "var(--font-satoshi), system-ui, sans-serif",
-            textAlign: "center",
-            letterSpacing: "0.5px",
-          }}
-        >
-          Authentication Required
-        </div>
-
-        <div
-          style={{
-            color: "#888",
-            fontSize: "14px",
-            marginBottom: "24px",
-            textAlign: "center",
-            lineHeight: "1.6",
-            fontFamily: "var(--font-satoshi), system-ui, sans-serif",
-          }}
-        >
-          You need to be logged in to send messages. Please sign in to continue
-          using the chat.
-        </div>
-
-        <div
-          style={{
-            display: "flex",
-            gap: "12px",
-            justifyContent: "center",
-          }}
-        >
-          <button
-            onClick={onClose}
-            style={{
-              background: "transparent",
-              border: "1px solid #333",
-              color: "#888",
-              cursor: "pointer",
-              padding: "10px 20px",
-              fontSize: "13px",
-              fontWeight: 500,
-              fontFamily: "var(--font-satoshi), system-ui, sans-serif",
-              transition: "all 0.15s ease",
-              borderRadius: "6px",
-            }}
-            onMouseEnter={(e) => {
-              e.currentTarget.style.borderColor = "#555";
-              e.currentTarget.style.color = "#A0A0A0";
-            }}
-            onMouseLeave={(e) => {
-              e.currentTarget.style.borderColor = "#333";
-              e.currentTarget.style.color = "#888";
-            }}
-          >
-            Cancel
-          </button>
-
-          <button
-            onClick={onLogin}
-            style={{
-              background: "#EAEAEA",
-              border: "1px solid #EAEAEA",
-              color: "#000000",
-              cursor: "pointer",
-              padding: "10px 20px",
-              fontSize: "13px",
-              fontWeight: 600,
-              fontFamily: "var(--font-satoshi), system-ui, sans-serif",
-              transition: "all 0.15s ease",
-              borderRadius: "6px",
-            }}
-            onMouseEnter={(e) => {
-              e.currentTarget.style.background = "#FFFFFF";
-              e.currentTarget.style.borderColor = "#FFFFFF";
-            }}
-            onMouseLeave={(e) => {
-              e.currentTarget.style.background = "#EAEAEA";
-              e.currentTarget.style.borderColor = "#EAEAEA";
-            }}
-          >
-            Log In
-          </button>
-        </div>
+    <Modal onClose={onClose} labelledBy="login-modal-title" className="max-w-sm text-center">
+      <LogoMark className="mx-auto size-10 text-pm-fg" />
+      <h2 id="login-modal-title" className="mt-4 text-lg font-semibold tracking-tight">
+        Sign in to keep going
+      </h2>
+      <p className="mt-2 text-sm leading-relaxed text-pm-muted">
+        You need an account to send messages and save your projects. It&apos;s free during early access.
+      </p>
+      <div className="mt-6 flex flex-col gap-2">
+        <Button variant="primary" onClick={onLogin} className="w-full">
+          Log in
+        </Button>
+        <Link href="/signup" className="w-full">
+          <Button variant="outline" className="w-full">
+            Create an account
+          </Button>
+        </Link>
+        <Button variant="ghost" size="sm" onClick={onClose} className="mx-auto mt-1">
+          Not now
+        </Button>
       </div>
-    </div>
+    </Modal>
   );
 }

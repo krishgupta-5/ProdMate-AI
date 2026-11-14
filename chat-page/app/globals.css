@@ -1,170 +1,226 @@
-@import url("https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&family=Geist+Mono:wght@400;500;600&display=swap");
+/* Mono faces referenced by name in the artifact viewers (code, schema, API design). */
+@import url("https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500&family=Geist+Mono:wght@400;500;600&display=swap");
 @import "tailwindcss";
 @import "tw-animate-css";
 
 @custom-variant dark (&:is(.dark *));
 
+/* ============================================================
+   DESIGN TOKENS — same palette as the landing page
+   (landing-page/src/styles/global.css). Used as `bg-pm-*`,
+   `text-pm-*`, `border-pm-*`. The app is light only for now.
+============================================================ */
+@theme inline {
+  --font-sans: var(--font-inter), ui-sans-serif, system-ui, sans-serif;
+  --font-heading: var(--font-inter), ui-sans-serif, system-ui, sans-serif;
+  --font-mono: var(--font-mono-face), ui-monospace, "SF Mono", SFMono-Regular, Menlo, monospace;
+
+  --color-pm-bg: var(--pm-bg);
+  --color-pm-fg: var(--pm-fg);
+  --color-pm-muted: var(--pm-muted);
+  --color-pm-shell: var(--pm-shell);
+  --color-pm-card: var(--pm-card);
+  --color-pm-line: var(--pm-line);
+  --color-pm-primary: var(--pm-primary);
+  --color-pm-primary-fg: var(--pm-primary-fg);
+  --color-pm-accent: var(--pm-accent);
+  --color-pm-danger: var(--pm-danger);
+  --color-pm-hover: var(--pm-hover);
+  --color-pm-line-strong: var(--pm-line-strong);
+  --color-pm-fg-soft: var(--pm-fg-soft);
+  --color-pm-code: var(--pm-code-bg);
+  --color-pm-green: var(--pm-green);
+  --color-pm-blue: var(--pm-blue);
+  --color-pm-amber: var(--pm-amber);
+  --color-pm-red: var(--pm-red);
+  --color-pm-violet: var(--pm-violet);
+
+  /* shadcn-style aliases, so any shadcn primitive picks up the same palette */
+  --color-background: var(--pm-bg);
+  --color-foreground: var(--pm-fg);
+  --color-card: var(--pm-card);
+  --color-card-foreground: var(--pm-fg);
+  --color-popover: var(--pm-card);
+  --color-popover-foreground: var(--pm-fg);
+  --color-primary: var(--pm-primary);
+  --color-primary-foreground: var(--pm-primary-fg);
+  --color-secondary: var(--pm-shell);
+  --color-secondary-foreground: var(--pm-fg);
+  --color-muted: var(--pm-shell);
+  --color-muted-foreground: var(--pm-muted);
+  --color-accent: var(--pm-shell);
+  --color-accent-foreground: var(--pm-fg);
+  --color-destructive: var(--pm-danger);
+  --color-border: var(--pm-line);
+  --color-input: var(--pm-line);
+  --color-ring: var(--pm-accent);
+
+  --radius-sm: 0.375rem;
+  --radius-md: 0.5rem;
+  --radius-lg: 0.75rem;
+  --radius-xl: 1rem;
+  --radius-2xl: 1.25rem;
+  --radius-3xl: 1.5rem;
+}
+
 :root {
-  /* ── Monochrome Palette (Black & White) ── */
-  --bg-sidebar: transparent;
-  --bg-chat: rgba(0, 0, 0, 0.3);
-  --bg-config: rgba(10, 10, 10, 0.5);
-  --bg-card: rgba(20, 20, 20, 0.5);
-  --bg-card-hover: rgba(30, 30, 30, 0.6);
-  --bg-input: rgba(15, 15, 15, 0.65);
-  --bg-header: transparent;
+  --pm-bg: oklch(1 0 0);
+  --pm-fg: oklch(0.145 0 0);
+  --pm-muted: oklch(0.556 0 0);
+  /* Outer shell (app background, hover fills); content sits on --pm-card inside it. */
+  --pm-shell: oklch(0.965 0 0);
+  --pm-card: oklch(1 0 0);
+  --pm-line: oklch(0.922 0 0);
+  /* Prodmate violet: fills only (buttons, dots), with white text on top. */
+  --pm-primary: #6c5ce7;
+  --pm-primary-fg: #ffffff;
+  /* Deeper violet for text or small icons on white. */
+  --pm-accent: #4f3fc4;
+  --pm-danger: #dc2626;
+  /* In-between steps used by older inline-styled components. */
+  --pm-hover: oklch(0.945 0 0);
+  --pm-line-strong: oklch(0.87 0 0);
+  --pm-fg-soft: oklch(0.45 0 0);
 
-  /* ── Monochrome Borders ── */
-  --border-subtle: rgba(255, 255, 255, 0.08);
-  --border-mid: rgba(255, 255, 255, 0.15);
-  --border-glow: rgba(255, 255, 255, 0.3);
+  /* Code blocks and syntax colours (GitHub-light style). */
+  --pm-code-bg: oklch(0.982 0 0);
+  --pm-code-line: oklch(0.72 0 0);
+  --pm-code-keyword: #8250df;
+  --pm-code-function: #0550ae;
+  --pm-code-string: #0a7d3e;
+  --pm-code-number: #b35900;
+  --pm-code-punct: oklch(0.5 0 0);
+  --pm-code-text: oklch(0.25 0 0);
+  --pm-code-comment: oklch(0.6 0 0);
 
-  /* ── White/Grayscale Accents ── */
-  --accent-primary: #ffffff;
-  --accent-light: #e0e0e0;
-  --accent-glow: rgba(255, 255, 255, 0.15);
-  --accent-gradient: #ffffff;
-  --accent-red: #ff3b30;
+  /* Status colours for badges (HTTP methods, priorities, risk levels). */
+  --pm-green: #15803d;
+  --pm-blue: #1d4ed8;
+  --pm-amber: #b45309;
+  --pm-red: #b91c1c;
+  --pm-violet: #6d28d9;
 
-  /* ── Clean Typography ── */
-  --text-primary: #ffffff;
-  --text-secondary: #999999;
-  --text-muted: #666666;
+  --ease-pm: cubic-bezier(0.16, 1, 0.3, 1);
 
-  /* ── Effects & Glassmorphism ── */
-  --shadow-premium: 0 8px 32px 0 rgba(0, 0, 0, 0.6);
-  --glass-blur: blur(16px);
-  --glass-bg: rgba(255, 255, 255, 0.03);
-  --glass-border: rgba(255, 255, 255, 0.08);
-  --glass-border-highlight: rgba(255, 255, 255, 0.15);
-  --transition-smooth: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
-  --rail-width: 68px;
+  /* Older components still read --font-satoshi; point it at Inter. */
+  --font-satoshi: var(--font-inter);
+
+  /* Legacy tokens kept for components not yet redesigned. */
+  --text-primary: var(--pm-fg);
+  --text-secondary: var(--pm-muted);
+  --text-muted: var(--pm-muted);
+  --border-subtle: var(--pm-line);
+  --border-mid: var(--pm-line);
+  --rail-width: 64px;
+
+  color-scheme: light;
 }
 
-.glass-panel {
-  background: var(--glass-bg);
-  backdrop-filter: var(--glass-blur);
-  -webkit-backdrop-filter: var(--glass-blur);
-  border: 1px solid var(--glass-border);
-  box-shadow:
-    inset 0 1px 0 rgba(255, 255, 255, 0.05),
-    var(--shadow-premium);
-  border-radius: 16px;
+/* Dark theme: chosen in Settings → Appearance (lib/theme.ts), applied as `.dark` on <html>. */
+:root.dark {
+  --pm-bg: oklch(0.17 0 0);
+  --pm-fg: oklch(0.96 0 0);
+  --pm-muted: oklch(0.66 0 0);
+  --pm-shell: oklch(0.145 0 0);
+  --pm-card: oklch(0.19 0 0);
+  --pm-line: oklch(0.27 0 0);
+  --pm-primary: #7b6cf0;
+  --pm-primary-fg: #ffffff;
+  --pm-accent: #a99ff8;
+  --pm-danger: #f87171;
+  --pm-hover: oklch(0.24 0 0);
+  --pm-line-strong: oklch(0.34 0 0);
+  --pm-fg-soft: oklch(0.78 0 0);
+
+  --pm-code-bg: oklch(0.155 0 0);
+  --pm-code-line: oklch(0.42 0 0);
+  --pm-code-keyword: #c792ea;
+  --pm-code-function: #82aaff;
+  --pm-code-string: #a5d6a7;
+  --pm-code-number: #f78c6c;
+  --pm-code-punct: oklch(0.65 0 0);
+  --pm-code-text: oklch(0.9 0 0);
+  --pm-code-comment: oklch(0.55 0 0);
+
+  --pm-green: #4ade80;
+  --pm-blue: #60a5fa;
+  --pm-amber: #fbbf24;
+  --pm-red: #f87171;
+  --pm-violet: #a78bfa;
+
+  color-scheme: dark;
 }
 
 /* ============================================================
-   RESET & BASE
- ============================================================ */
-* {
-  margin: 0;
-  padding: 0;
-  box-sizing: border-box;
-  transition:
-    background-color 0.2s ease,
-    border-color 0.2s ease,
-    color 0.2s ease,
-    transform 0.2s ease,
-    box-shadow 0.2s ease;
+   BASE
+============================================================ */
+/* No unlayered `* { margin/padding }` reset here: Tailwind's preflight already resets them, and an
+   unlayered rule would override every spacing utility (p-*, m-*, gap is fine) in Tailwind v4. */
+@layer base {
+  * {
+    @apply border-pm-line outline-pm-accent/50;
+  }
+  html {
+    @apply font-sans;
+  }
+  body {
+    @apply bg-pm-shell text-pm-fg;
+  }
+  button:not(:disabled),
+  [role="button"]:not(:disabled) {
+    cursor: pointer;
+  }
 }
 
-::selection {
-  background-color: #ffffff;
-  color: #000000;
-}
-
-::-moz-selection {
-  background-color: #ffffff;
-  color: #000000;
-}
-
-/* ============================================================
-   HTML — FLAT MONOCHROME
- ============================================================ */
 html {
   height: 100%;
-  background-color: #000000;
 }
 
 body {
   height: 100%;
-  background: transparent;
-  font-family:
-    var(--font-satoshi),
-    "Poppins",
-    -apple-system,
-    BlinkMacSystemFont,
-    "Segoe UI",
-    Roboto,
-    Oxygen,
-    Ubuntu,
-    Cantarell,
-    "Open Sans",
-    "Helvetica Neue",
-    sans-serif;
-  color: var(--text-primary);
-  -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
   overflow: hidden;
   position: relative;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+::selection {
+  background: color-mix(in oklch, var(--pm-primary) 25%, transparent);
 }
 
 /* ============================================================
-   RESPONSIVE LAYOUT CLASSES
-============================================================ */
-.app-sidebar {
-  transition:
-    transform 0.2s ease,
-    width 0.2s ease;
-}
-
-.app-chat {
-  transition: width 0.2s ease;
-}
-
-@media (max-width: 768px) {
-  .app-sidebar {
-    position: absolute !important;
-    top: 0;
-    left: 0;
-    bottom: 0;
-    z-index: 50;
-    width: 85vw !important;
-    max-width: 320px;
-    background: #000000 !important;
-    box-shadow: 10px 0 40px rgba(0, 0, 0, 0.8);
-  }
-
-  .app-chat {
-    width: 100vw !important;
-  }
-}
-
-/* Removed noise texture for a completely completely flat black look */
-
-/* ============================================================
-   CUSTOM SCROLLBAR
+   SCROLLBARS
 ============================================================ */
 ::-webkit-scrollbar {
-  width: 4px;
-  height: 4px;
+  width: 6px;
+  height: 6px;
 }
-
 ::-webkit-scrollbar-track {
   background: transparent;
 }
-
 ::-webkit-scrollbar-thumb {
-  background: rgba(255, 255, 255, 0.15);
+  background: color-mix(in oklch, var(--pm-fg) 14%, transparent);
   border-radius: 10px;
 }
-
 ::-webkit-scrollbar-thumb:hover {
-  background: rgba(255, 255, 255, 0.3);
+  background: color-mix(in oklch, var(--pm-fg) 26%, transparent);
 }
 
 /* ============================================================
    ANIMATIONS
 ============================================================ */
+@keyframes pm-fade-up {
+  from {
+    opacity: 0;
+    translate: 0 var(--rise, 12px);
+  }
+}
+
+/* Fades up into place on mount. `--rise`, `--duration` and `--delay` tune each use. */
+.fade-up {
+  animation: pm-fade-up var(--duration, 0.6s) var(--ease-pm) var(--delay, 0s) both;
+}
+
 @keyframes fadeInUp {
   from {
     opacity: 0;
@@ -189,16 +245,6 @@ body {
   }
 }
 
-@keyframes glow-pulse {
-  0%,
-  100% {
-    box-shadow: 0 0 8px rgba(255, 255, 255, 0.1);
-  }
-  50% {
-    box-shadow: 0 0 20px rgba(255, 255, 255, 0.25);
-  }
-}
-
 @keyframes shimmer {
   0% {
     background-position: -250% center;
@@ -208,33 +254,16 @@ body {
   }
 }
 
-@keyframes auroraSweep {
-  0% {
-    opacity: 0.02;
-    transform: translateX(-20%) skewX(-5deg);
-  }
-  50% {
-    opacity: 0.06;
-    transform: translateX(20%) skewX(5deg);
-  }
-  100% {
-    opacity: 0.02;
-    transform: translateX(-20%) skewX(-5deg);
-  }
-}
-
 .animate-fade-in-up {
-  animation: fadeInUp 0.4s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+  animation: fadeInUp 0.4s var(--ease-pm) forwards;
 }
 
 .typing-dot {
   animation: typing-dot 1.4s infinite;
 }
-
 .typing-dot:nth-child(2) {
   animation-delay: 0.2s;
 }
-
 .typing-dot:nth-child(3) {
   animation-delay: 0.4s;
 }
@@ -247,96 +276,41 @@ body {
     transform: rotate(360deg);
   }
 }
-
 .send-spinner {
   animation: sendSpinnerRotate 0.8s linear infinite;
 }
 
-@theme inline {
-  --font-heading: var(--font-sans);
-  --font-sans: var(--font-sans);
-  --color-sidebar-ring: var(--sidebar-ring);
-  --color-sidebar-border: var(--sidebar-border);
-  --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
-  --color-sidebar-accent: var(--sidebar-accent);
-  --color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
-  --color-sidebar-primary: var(--sidebar-primary);
-  --color-sidebar-foreground: var(--sidebar-foreground);
-  --color-sidebar: var(--sidebar);
-  --color-chart-5: var(--chart-5);
-  --color-chart-4: var(--chart-4);
-  --color-chart-3: var(--chart-3);
-  --color-chart-2: var(--chart-2);
-  --color-chart-1: var(--chart-1);
-  --color-ring: var(--ring);
-  --color-input: var(--input);
-  --color-border: var(--border);
-  --color-destructive: var(--destructive);
-  --color-accent-foreground: var(--accent-foreground);
-  --color-accent: var(--accent);
-  --color-muted-foreground: var(--muted-foreground);
-  --color-muted: var(--muted);
-  --color-secondary-foreground: var(--secondary-foreground);
-  --color-secondary: var(--secondary);
-  --color-primary-foreground: var(--primary-foreground);
-  --color-primary: var(--primary);
-  --color-popover-foreground: var(--popover-foreground);
-  --color-popover: var(--popover);
-  --color-card-foreground: var(--card-foreground);
-  --color-card: var(--card);
-  --color-foreground: var(--foreground);
-  --color-background: var(--background);
-  --radius-sm: calc(var(--radius) * 0.6);
-  --radius-md: calc(var(--radius) * 0.8);
-  --radius-lg: var(--radius);
-  --radius-xl: calc(var(--radius) * 1.4);
-  --radius-2xl: calc(var(--radius) * 1.8);
-  --radius-3xl: calc(var(--radius) * 2.2);
-  --radius-4xl: calc(var(--radius) * 2.6);
+/* Moving highlight across text while ProdMate is working. */
+.pm-shimmer {
+  background: linear-gradient(90deg, var(--pm-fg) 0%, var(--pm-fg) 40%, var(--pm-primary) 50%, var(--pm-fg) 60%, var(--pm-fg) 100%);
+  background-size: 250% 100%;
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+  animation: shimmer 2.2s linear infinite;
+}
+@media (prefers-reduced-motion: reduce) {
+  .pm-shimmer {
+    animation: none;
+    color: var(--pm-fg);
+  }
 }
 
-.dark {
-  --background: oklch(0.145 0 0);
-  --foreground: oklch(0.985 0 0);
-  --card: oklch(0.205 0 0);
-  --card-foreground: oklch(0.985 0 0);
-  --popover: oklch(0.205 0 0);
-  --popover-foreground: oklch(0.985 0 0);
-  --primary: oklch(0.922 0 0);
-  --primary-foreground: oklch(0.205 0 0);
-  --secondary: oklch(0.269 0 0);
-  --secondary-foreground: oklch(0.985 0 0);
-  --muted: oklch(0.269 0 0);
-  --muted-foreground: oklch(0.708 0 0);
-  --accent: oklch(0.269 0 0);
-  --accent-foreground: oklch(0.985 0 0);
-  --destructive: oklch(0.704 0.191 22.216);
-  --border: oklch(1 0 0 / 10%);
-  --input: oklch(1 0 0 / 15%);
-  --ring: oklch(0.556 0 0);
-  --chart-1: oklch(0.87 0 0);
-  --chart-2: oklch(0.556 0 0);
-  --chart-3: oklch(0.439 0 0);
-  --chart-4: oklch(0.371 0 0);
-  --chart-5: oklch(0.269 0 0);
-  --sidebar: oklch(0.205 0 0);
-  --sidebar-foreground: oklch(0.985 0 0);
-  --sidebar-primary: oklch(0.488 0.243 264.376);
-  --sidebar-primary-foreground: oklch(0.985 0 0);
-  --sidebar-accent: oklch(0.269 0 0);
-  --sidebar-accent-foreground: oklch(0.985 0 0);
-  --sidebar-border: oklch(1 0 0 / 10%);
-  --sidebar-ring: oklch(0.556 0 0);
+/* The violet orb above the home-screen greeting. */
+.pm-orb {
+  background:
+    radial-gradient(circle at 32% 28%, #ffffff 0%, rgba(255, 255, 255, 0) 32%),
+    radial-gradient(circle at 70% 75%, #3b82f6 0%, rgba(59, 130, 246, 0) 55%),
+    radial-gradient(circle at 50% 50%, #8b7cf6 0%, #6c5ce7 55%, #4f3fc4 100%);
+  box-shadow:
+    0 12px 32px -8px color-mix(in oklch, var(--pm-primary) 55%, transparent),
+    inset 0 -6px 12px rgba(40, 20, 120, 0.25);
 }
 
-@layer base {
-  * {
-    @apply border-border outline-ring/50;
-  }
-  body {
-    @apply bg-background text-foreground;
-  }
-  html {
-    @apply font-sans;
+@media (prefers-reduced-motion: reduce) {
+  @keyframes pm-fade-up {
+    from {
+      opacity: 0;
+    }
   }
 }

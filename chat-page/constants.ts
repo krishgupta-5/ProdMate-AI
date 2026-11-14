@@ -1,12 +1,11 @@
-import { Inter, Poppins } from "next/font/google";
+import { Inter } from "next/font/google";
 
-export const satoshi = Poppins({
-    subsets: ["latin"],
-    variable: "--font-satoshi",
-    weight: ["100", "200", "300", "400", "500", "600", "700", "800", "900"],
-});
-
+// Inter, the same typeface as the landing page.
 export const inter = Inter({
     subsets: ["latin"],
     variable: "--font-inter",
 });
+
+// Older components put `satoshi.variable` on their root and read `var(--font-satoshi)`.
+// globals.css maps --font-satoshi to Inter, so this alias keeps them on the same font.
+export const satoshi = inter;

@@ -1,132 +1,29 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
-import Sidebar from "../components/Sidebar";
-import ChatPanel from "../components/ChatPanel";
-import LoginModal from "../components/LoginModal";
+import React, { useEffect } from "react";
 import { useParams } from "next/navigation";
-
-const agentNames: Record<string, string> = {
-  "1": "External Meeting Prep Ag...",
-  "2": "Market Research",
-  "3": "Email Drafter",
-  "4": "Lead Enrichment",
-};
+import AppShell from "../components/AppShell";
+import ChatPanel from "../components/ChatPanel";
 
 export default function ChatSession() {
-  const [activeAgentId, setActiveAgentId] = useState("1");
-  const [isSidebarOpen, setIsSidebarOpen] = useState(false);
-  const [sidebarWidth, setSidebarWidth] = useState(260);
-  const [showLoginModal, setShowLoginModal] = useState(false);
   const params = useParams();
   const sessionId = params.sessionId as string;
 
-  // Sync sessionStorage with URL sessionId so that getSessionId()
-  // returns the correct value throughout this chat session.
+  // Sync sessionStorage with the URL so getSessionId() returns this session everywhere.
   useEffect(() => {
-    if (sessionId && typeof window !== "undefined") {
-      sessionStorage.setItem("ProdMate-session-id", sessionId);
-    }
+    if (sessionId) sessionStorage.setItem("ProdMate-session-id", sessionId);
   }, [sessionId]);
 
-  const handleLoginModalClose = () => {
-    setShowLoginModal(false);
-  };
-
-  const handleLoginRedirect = () => {
-    window.location.href = "/login";
-  };
-
-  const handleMouseDown = (e: React.MouseEvent) => {
-    e.preventDefault();
-    document.body.style.userSelect = "none";
-    document.body.style.cursor = "col-resize";
-
-    let rafId: number;
-    let lastWidth = sidebarWidth;
-
-    const handleMouseMove = (moveEvent: MouseEvent) => {
-      moveEvent.preventDefault();
-
-      // Cancel previous animation frame
-      if (rafId) {
-        cancelAnimationFrame(rafId);
-      }
-
-      // Use requestAnimationFrame for smooth updates
-      rafId = requestAnimationFrame(() => {
-        const newWidth = moveEvent.clientX;
-        if (newWidth >= 200 && newWidth <= 500 && newWidth !== lastWidth) {
-          lastWidth = newWidth;
-          setSidebarWidth(newWidth);
-        }
-      });
-    };
-
-    const handleMouseUp = () => {
-      document.body.style.userSelect = "";
-      document.body.style.cursor = "";
-
-      // Cancel any pending animation frame
-      if (rafId) {
-        cancelAnimationFrame(rafId);
-      }
-
-      document.removeEventListener("mousemove", handleMouseMove);
-      document.removeEventListener("mouseup", handleMouseUp);
-    };
-
-    document.addEventListener("mousemove", handleMouseMove);
-    document.addEventListener("mouseup", handleMouseUp);
-  };
-
   return (
-    <>
-      <div
-        className="glass-panel"
-        style={{
-          display: "flex",
-          height: "100vh",
-          width: "100vw",
-          overflow: "hidden",
-          position: "relative",
-          zIndex: 1,
-          borderRadius: 0,
-        }}
-      >
-        <div
-          style={{
-            display: "flex",
-            flex: 1,
-            height: "100%",
-            overflow: "hidden",
-          }}
-        >
-          <Sidebar
-            activeAgentId={sessionId}
-            onSelectAgent={setActiveAgentId}
-            isOpen={isSidebarOpen}
-            onToggle={() => setIsSidebarOpen(!isSidebarOpen)}
-            sidebarWidth={sidebarWidth}
-            onResize={handleMouseDown}
-            showLoginModal={showLoginModal}
-            onShowLoginModal={setShowLoginModal}
-          />
-
-          <ChatPanel
-            agentName={agentNames[activeAgentId]}
-            sessionId={sessionId}
-            showLoginModal={showLoginModal}
-            onShowLoginModal={setShowLoginModal}
-          />
-        </div>
-      </div>
-
-      <LoginModal
-        isOpen={showLoginModal}
-        onClose={handleLoginModalClose}
-        onLogin={handleLoginRedirect}
-      />
-    </>
+    <AppShell activeSessionId={sessionId}>
+      {({ showLoginModal, onShowLoginModal }) => (
+        <ChatPanel
+          agentName="External Meeting Prep Ag..."
+          sessionId={sessionId}
+          showLoginModal={showLoginModal}
+          onShowLoginModal={onShowLoginModal}
+        />
+      )}
+    </AppShell>
   );
 }

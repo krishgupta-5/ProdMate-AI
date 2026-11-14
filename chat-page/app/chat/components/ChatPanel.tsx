@@ -4,42 +4,42 @@ import React, { useState, useRef, useEffect } from "react";
 import { useUser } from "@clerk/nextjs";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { UserCircleIcon } from "hugeicons-react";
+import { ArrowDown, ArrowRight, Check, Copy, FolderKanban, Lock, Pencil, Wrench } from "lucide-react";
+import { LogoMark } from "@/app/chat/components/Logo";
+import { humanizeStatus } from "@/lib/artifact-labels";
+import { useSmoothScroll } from "@/lib/use-smooth-scroll";
 import { satoshi } from "@/constants";
+import { TopBar, Crumb } from "@/app/chat/components/AppShell";
+import { buttonClass } from "@/app/chat/components/ui";
+import { TOKEN_QUOTA_EVENT } from "@/app/chat/components/TokenUsage";
 import { getSessionId, resetSessionId } from "@/lib/sessionId";
 import DbSchemaViewer from "@/app/chat/components/DbSchemaViewer";
-import LanguageBadge from "@/app/chat/components/LanguageBadge";
 import FolderStructureViewer from "@/app/chat/components/FolderStructureViewer";
 import ApiDesignViewer from "@/app/chat/components/ApiDesignViewer";
 import TestingPlanViewer from "@/app/chat/components/TestingPlanViewer";
 import CodeRenderer from "@/app/chat/components/CodeRenderer";
 import MarkdownRenderer from "@/app/chat/components/MarkdownRenderer";
-import FileContentRenderer from "@/app/chat/components/FileContentRenderer";
-import FileHeader from "@/app/chat/components/FileHeader";
+import ArtifactCard from "@/app/chat/components/ArtifactCard";
 import InputArea from "@/app/chat/components/InputArea";
 import FinalSummaryCard from "@/app/chat/components/FinalSummaryCard";
 import EmailPreviewCard from "@/app/chat/components/EmailPreviewCard";
 import MeetingPreviewCard from "@/app/chat/components/MeetingPreviewCard";
 import type { ProgressEvent, EmailPreview, MeetingPreview } from "@/lib/pipeline/types";
 
-const AppIcon = ({ size = 24 }: { size?: number }) => (
-  <svg width={size} height={size} viewBox="0 0 196 196" fill="none" xmlns="http://www.w3.org/2000/svg">
-    <path fillRule="evenodd" clipRule="evenodd" d="M73.9216 7.17157V38.2486C73.9216 38.519 74.0311 38.7779 74.2251 38.9662L90.3396 54.6067C90.7128 54.969 91.2125 55.1716 91.7326 55.1716H104.093C104.624 55.1716 105.132 54.9609 105.507 54.5858L121.129 38.9645C121.316 38.7769 121.422 38.5226 121.422 38.2574V7.17157L114.836 0.585786C114.055 -0.195263 112.788 -0.195261 112.007 0.585787L105.422 7.17157V37.6716C105.422 38.2239 104.974 38.6716 104.422 38.6716H90.9216C90.3693 38.6716 89.9216 38.2239 89.9216 37.6716V7.17157L83.3358 0.585786C82.5547 -0.195263 81.2884 -0.195261 80.5074 0.585787L73.9216 7.17157ZM7.17158 121.422H38.2486C38.519 121.422 38.7779 121.312 38.9662 121.118L54.6067 105.004C54.969 104.63 55.1716 104.131 55.1716 103.611V91.25C55.1716 90.7196 54.9609 90.2109 54.5858 89.8358L38.9645 74.2145C38.7769 74.0269 38.5226 73.9216 38.2574 73.9216H7.17157L0.585786 80.5074C-0.195263 81.2884 -0.195261 82.5547 0.585787 83.3358L7.17157 89.9216H37.6716C38.2239 89.9216 38.6716 90.3693 38.6716 90.9216V104.422C38.6716 104.974 38.2239 105.422 37.6716 105.422H7.17157L0.585787 112.007C-0.195261 112.788 -0.19526 114.055 0.585789 114.836L7.17158 121.422ZM38.8598 72.4469L16.8851 50.4722V41.1585C16.8851 40.0539 17.7805 39.1585 18.8851 39.1585H28.1988L49.7655 60.7252C50.1561 61.1157 50.7892 61.1157 51.1798 60.7252L60.7257 51.1793C61.1162 50.7887 61.1162 50.1556 60.7257 49.7651L39.1589 28.1983V18.8846C39.1589 17.78 40.0544 16.8846 41.1589 16.8846H50.4726L72.4536 38.8656C72.6411 39.0531 72.7465 39.3075 72.7465 39.5727V61.6646C72.7465 62.195 72.5358 62.7037 72.1607 63.0788L63.4205 71.819C63.0527 72.1868 62.5561 72.3968 62.0361 72.4046L39.5819 72.7397C39.3115 72.7438 39.051 72.6381 38.8598 72.4469ZM145.565 16.8284L123.591 38.8032C123.4 38.9944 123.294 39.2549 123.298 39.5252L123.633 61.9795C123.641 62.4995 123.851 62.9961 124.219 63.3638L132.959 72.1041C133.334 72.4791 133.843 72.6899 134.373 72.6899H156.465C156.73 72.6899 156.985 72.5845 157.172 72.397L179.153 50.416V41.1023C179.153 39.9977 178.258 39.1023 177.153 39.1023H167.839L146.273 60.669C145.882 61.0596 145.249 61.0596 144.858 60.669L135.312 51.1231C134.922 50.7326 134.922 50.0994 135.312 49.7089L156.879 28.1421V18.8284C156.879 17.7239 155.984 16.8284 154.879 16.8284L145.565 16.8284ZM121.422 157.095V188.172L114.836 194.757C114.055 195.538 112.788 195.538 112.007 194.757L105.422 188.172V157.672C105.422 157.119 104.974 156.672 104.422 156.672H90.9216C90.3693 156.672 89.9216 157.119 89.9216 157.672V188.172L83.3358 194.757C82.5547 195.538 81.2884 195.538 80.5074 194.757L73.9216 188.172V157.086C73.9216 156.821 74.0269 156.566 74.2145 156.379L89.8358 140.757C90.2109 140.382 90.7196 140.172 91.25 140.172H103.611C104.131 140.172 104.63 140.374 105.004 140.736L121.118 156.377C121.312 156.565 121.422 156.824 121.422 157.095ZM188.172 73.9216H157.095C156.824 73.9216 156.565 74.0311 156.377 74.2251L140.736 90.3396C140.374 90.7128 140.172 91.2125 140.172 91.7326V104.093C140.172 104.624 140.382 105.132 140.757 105.507L156.379 121.129C156.566 121.316 156.821 121.422 157.086 121.422H188.172L194.757 114.836C195.538 114.055 195.538 112.788 194.757 112.007L188.172 105.422H157.672C157.119 105.422 156.672 104.974 156.672 104.422V90.9216C156.672 90.3693 157.119 89.9216 157.672 89.9216H188.172L194.757 83.3358C195.538 82.5547 195.538 81.2884 194.757 80.5074L188.172 73.9216ZM156.483 122.896L178.458 144.871V154.185C178.458 155.289 177.563 156.185 176.458 156.185H167.144L145.578 134.618C145.187 134.227 144.554 134.227 144.163 134.618L134.617 144.164C134.227 144.554 134.227 145.188 134.617 145.578L156.184 167.145V176.459C156.184 177.563 155.289 178.459 154.184 178.459H144.871L122.89 156.478C122.702 156.29 122.597 156.036 122.597 155.77V133.679C122.597 133.148 122.807 132.639 123.182 132.264L131.923 123.524C132.29 123.156 132.787 122.946 133.307 122.939L155.761 122.603C156.032 122.599 156.292 122.705 156.483 122.896ZM51.1663 178.401L73.1411 156.427C73.3323 156.235 73.4379 155.975 73.4339 155.705L73.0987 133.25C73.091 132.73 72.8809 132.234 72.5132 131.866L63.7729 123.126C63.3979 122.751 62.8892 122.54 62.3587 122.54H40.2668C40.0016 122.54 39.7473 122.645 39.5597 122.833L17.5788 144.814L17.5788 154.128C17.5788 155.232 18.4742 156.128 19.5788 156.128H28.8925L50.4592 134.561C50.8497 134.17 51.4829 134.17 51.8734 134.561L61.4194 144.107C61.8099 144.497 61.8099 145.13 61.4194 145.521L39.8526 167.088V176.401C39.8526 177.506 40.748 178.401 41.8526 178.401H51.1663Z" fill="currentColor" />
-  </svg>
-);
 
-// ── ProdMate Design Tokens (ProdMate Minimal Palette) ──────────
+
+// ── ProdMate Design Tokens (light palette shared with the landing page, see globals.css) ──
 const T = {
-  bg: "#09090b",
-  surface: "#121214",
-  surfaceHover: "#18181b",
-  border: "#27272a",
-  borderHover: "#3f3f46",
-  text: "#ededed",
-  textMuted: "#a1a1aa",
-  textHint: "#71717a",
-  accent: "#ffffff",
-  font: "var(--font-satoshi), system-ui, -apple-system, sans-serif",
+  bg: "var(--pm-card)",
+  surface: "var(--pm-shell)",
+  surfaceHover: "var(--pm-hover)",
+  border: "var(--pm-line)",
+  borderHover: "var(--pm-line-strong)",
+  text: "var(--pm-fg)",
+  textMuted: "var(--pm-fg-soft)",
+  textHint: "var(--pm-muted)",
+  accent: "var(--pm-primary)",
+  font: "var(--font-inter), system-ui, -apple-system, sans-serif",
 };
 
 export interface Message {
@@ -107,49 +107,12 @@ const OPTION_TO_ARTIFACT: Record<string, ArtifactType> = {
   "show risk analysis": "riskAnalysis", "generate final doc": "finalMarkdown",
 };
 
-// ── Professional SaaS Template Card ──────────
-const TemplateCard = ({ title, desc, icon, prompt, delay, onClick }: { title: string, desc: string, icon: React.ReactNode, prompt: string, delay: string, onClick: (t: string) => void }) => {
-  const [hover, setHover] = useState(false);
-  return (
-    <button
-      onClick={() => onClick(prompt)}
-      onMouseEnter={() => setHover(true)}
-      onMouseLeave={() => setHover(false)}
-      style={{
-        display: "flex",
-        flexDirection: "column",
-        alignItems: "flex-start",
-        gap: "12px",
-        padding: "16px",
-        background: hover ? T.surfaceHover : T.surface,
-        border: `1px solid ${hover ? T.borderHover : T.border}`,
-        borderRadius: "12px",
-        cursor: "pointer",
-        textAlign: "left",
-        transition: "all 0.2s ease",
-        animation: `slideUp 0.4s cubic-bezier(0.16, 1, 0.3, 1) ${delay} both`,
-        width: "100%"
-      }}
-    >
-      <div style={{ display: "flex", alignItems: "center", gap: "10px", width: "100%" }}>
-        <div style={{
-          display: "flex", alignItems: "center", justifyContent: "center",
-          width: "28px", height: "28px", borderRadius: "6px",
-          background: hover ? "#ffffff" : "rgba(255,255,255,0.08)",
-          color: hover ? "#000000" : T.textMuted,
-          transition: "all 0.2s ease"
-        }}>
-          {icon}
-        </div>
-        <span style={{ fontSize: "14px", fontWeight: 500, color: hover ? "#ffffff" : T.text, fontFamily: T.font, transition: "color 0.2s" }}>
-          {title}
-        </span>
-      </div>
-      <span style={{ fontSize: "13px", color: T.textMuted, lineHeight: "1.5", fontFamily: T.font }}>
-        {desc}
-      </span>
-    </button>
-  );
+const greetingFor = (date: Date) => {
+  const h = date.getHours();
+  if (h < 5) return "Good evening";
+  if (h < 12) return "Good morning";
+  if (h < 18) return "Good afternoon";
+  return "Good evening";
 };
 
 const aiPhrases = [
@@ -213,13 +176,59 @@ const TypingStatusText = ({ artifact, isExporting }: { artifact: string | null, 
   const artifactName = artifact ? (artifactMap[artifact] || "Artifacts") : "Response";
 
   return (
-    <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
-      <span style={{ fontSize: "13px", fontWeight: 600, color: "#ffffff", fontFamily: T.font, letterSpacing: "0.02em" }}>
-        {isExporting ? "Exporting Project" : (isGeneral ? "Thinking..." : `Generating ${artifactName}`)}
+    <div className="flex flex-wrap items-center gap-x-2.5 gap-y-1 text-[13px]">
+      <span className="pm-shimmer font-semibold">
+        {isExporting ? "Exporting project" : isGeneral ? "Thinking" : `Generating ${artifactName}`}
       </span>
-      <span style={{ fontSize: "13px", color: T.textHint, fontFamily: T.font, animation: "typingFade 2s infinite" }}>
+      <span className="flex gap-1" aria-hidden>
+        <span className="typing-dot size-1 rounded-full bg-pm-primary" />
+        <span className="typing-dot size-1 rounded-full bg-pm-primary" />
+        <span className="typing-dot size-1 rounded-full bg-pm-primary" />
+      </span>
+      <span key={idx} className="text-pm-muted animate-in fade-in duration-300">
         {phrases[idx]}
       </span>
+    </div>
+  );
+};
+
+/** Round profile picture, or the first letter of the name when there's no picture. */
+const UserAvatar = ({ imageUrl, name }: { imageUrl?: string; name?: string }) => {
+  const initial = (name && name !== "You" ? name : "Y").trim().charAt(0).toUpperCase();
+  return imageUrl ? (
+    // eslint-disable-next-line @next/next/no-img-element
+    <img src={imageUrl} alt="" className="mt-0.5 size-8 shrink-0 rounded-full border border-pm-line object-cover" />
+  ) : (
+    <span className="mt-0.5 grid size-8 shrink-0 place-items-center rounded-full bg-pm-primary/12 text-xs font-semibold text-pm-accent">{initial}</span>
+  );
+};
+/** Copy (and for your own messages, Edit) shown under a message on hover. */
+const MessageActions = ({ content, align = "start", onEdit }: { content: string; align?: "start" | "end"; onEdit?: () => void }) => {
+  const [copied, setCopied] = useState(false);
+  const clean = content.replace(/\n\n\[System Context:[\s\S]*?\]/, "").replace(/\n\nCurrent Draft:\n[\s\S]*/, "");
+  const copy = async () => {
+    try {
+      await navigator.clipboard.writeText(clean);
+    } catch {}
+    setCopied(true);
+    setTimeout(() => setCopied(false), 1400);
+  };
+  const btn =
+    "grid size-7 place-items-center rounded-lg text-pm-muted transition-colors hover:bg-pm-shell hover:text-pm-fg [&_svg]:size-3.5";
+  return (
+    <div
+      className={`mt-1 flex items-center gap-0.5 opacity-0 transition-opacity group-hover/msg:opacity-100 focus-within:opacity-100 ${
+        align === "end" ? "justify-end" : "-ml-1.5"
+      }`}
+    >
+      <button type="button" onClick={copy} title={copied ? "Copied" : "Copy"} aria-label="Copy message" className={btn}>
+        {copied ? <Check className="text-pm-green" /> : <Copy />}
+      </button>
+      {onEdit && (
+        <button type="button" onClick={onEdit} title="Edit" aria-label="Edit message" className={btn}>
+          <Pencil />
+        </button>
+      )}
     </div>
   );
 };
@@ -303,6 +312,27 @@ export default function ChatPanel({
     jira: boolean;
   }>({ github: false, notion: false, jira: false });
   const [isInitialLoading, setIsInitialLoading] = useState(!!sessionId && !isSharedView);
+  const [sessionTitle, setSessionTitle] = useState<string>(isSharedView ? sharedData?.metadata?.title || "" : "");
+
+  // After each reply the server may have just named the chat; pick the name up from the same list
+  // the sidebar shows, so both always match.
+  useEffect(() => {
+    if (isSharedView || !sessionId) return;
+    const refresh = () =>
+      fetch("/api/sessions", { cache: "no-store" })
+        .then((r) => (r.ok ? r.json() : null))
+        .then((d) => {
+          const s = d?.sessions?.find((x: { sessionId: string }) => x.sessionId === sessionId);
+          if (s?.lastMessage) setSessionTitle(s.lastMessage);
+        })
+        .catch(() => {});
+    refresh();
+    window.addEventListener("refresh-sessions", refresh);
+    return () => window.removeEventListener("refresh-sessions", refresh);
+  }, [sessionId, isSharedView]);
+
+  // Eased wheel scrolling once the message list is showing (it must be the scroller's only child).
+  useSmoothScroll(scrollableRef, !isInitialLoading && messages.length > 0);
 
   const scrollToBottom = () => messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
 
@@ -406,8 +436,9 @@ export default function ChatPanel({
           messages: rawAll = [],
           artifacts: rawArtifacts = {},
           notionUrl, exportStatus, githubUrl, githubExportStatus, jiraUrl, jiraExportStatus,
-          conversationMode: apiConvMode, pendingIntegrationUpdates
+          conversationMode: apiConvMode, pendingIntegrationUpdates, title: apiTitle
         } = resData;
+        if (apiTitle && isMounted && !/^(generate|show|view|system config|untitled)\b/i.test(apiTitle)) setSessionTitle(apiTitle);
 
         if (apiConvMode) setConversationMode(true);
         if (pendingIntegrationUpdates) setPendingUpdates(pendingIntegrationUpdates);
@@ -512,7 +543,7 @@ export default function ChatPanel({
 
               const { content: c2, file: f2, options: o2 } = buildAssistantMessage('config', latestResult, false);
               localHasConfig = true;
-              historyMessages.push({ id: `${msg.id}-config`, role: "assistant", content: "System config generated.", timestamp: ts, file: f2, options: o2 });
+              historyMessages.push({ id: `${msg.id}-config`, role: "assistant", content: "System configuration is ready.", timestamp: ts, file: f2, options: o2 });
             } else {
               const step = singleArtifactToStep[msg.artifactType];
               if (step) {
@@ -670,6 +701,7 @@ export default function ChatPanel({
       const quotaRes = await fetch("/api/token-quota");
       if (quotaRes.ok) {
         const fresh = await quotaRes.json(); setTokenQuota(fresh);
+        window.dispatchEvent(new CustomEvent(TOKEN_QUOTA_EVENT, { detail: fresh }));
       }
 
       let merged: any = generatedData ? { ...generatedData } : {};
@@ -826,74 +858,59 @@ export default function ChatPanel({
   };
   const handleInputChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
     setInput(e.target.value);
-    if (textareaRef.current) { textareaRef.current.style.height = "0px"; textareaRef.current.style.height = `${Math.min(textareaRef.current.scrollHeight, 160)}px`; }
   };
 
   const handleSuggestionClick = (prompt: string) => {
     setInput(prompt);
     if (textareaRef.current) {
       textareaRef.current.focus();
-      setTimeout(() => {
-        if (textareaRef.current) {
-          textareaRef.current.style.height = "0px";
-          textareaRef.current.style.height = `${Math.min(textareaRef.current.scrollHeight, 160)}px`;
-        }
-      }, 0);
     }
   };
 
   const displayName = cachedDisplayName;
 
+  // Time-based greeting, set on the client so server and browser render the same markup.
+  const [greeting, setGreeting] = useState("Hello");
+  useEffect(() => setGreeting(greetingFor(new Date())), []);
+  const firstName =
+    user?.firstName ||
+    (cachedDisplayName !== "You" && !cachedDisplayName.includes("@") ? cachedDisplayName.split(" ")[0] : "");
+
+  const isEmptyState = !isInitialLoading && messages.length === 0;
+  // The chat's name: the AI-generated session title (same as the sidebar), else the project idea.
+  const firstUserMessage = messages.find((m) => m.role === "user")?.content.replace(/\n\n\[System Context:[\s\S]*/, "").replace(/[*_`#>]/g, "").trim();
+  const projectTitle = sessionTitle || (firstUserMessage ? firstUserMessage.split("\n")[0] : "") || "Untitled project";
+
   return (
     <div id="chat-root" className={satoshi.variable} style={{ flex: 1, display: "flex", flexDirection: "column", background: T.bg, overflow: "hidden", minWidth: 0, position: "relative", fontFamily: T.font }}>
 
-      {/* ── Floating Nav Elements ── */}
-      <div style={{ position: "absolute", top: "24px", left: "24px", right: "32px", display: "flex", justifyContent: "space-between", alignItems: "center", zIndex: 100, pointerEvents: "none" }}>
-
-        {/* Left: Sidebar Toggle */}
-        <div style={{ pointerEvents: "auto" }}>
-          {!isSidebarOpen && !isSharedView && (
-            <button
-              onClick={onToggleSidebar}
-              title="Open sidebar"
-              style={{ display: "flex", alignItems: "center", justifyContent: "center", width: "32px", height: "32px", background: "transparent", border: `1px solid ${T.border}`, borderRadius: "6px", color: T.textMuted, cursor: "pointer", transition: "all .15s" }}
-              onMouseEnter={e => { e.currentTarget.style.color = T.text; e.currentTarget.style.background = T.surfaceHover; }}
-              onMouseLeave={e => { e.currentTarget.style.color = T.textMuted; e.currentTarget.style.background = "transparent"; }}>
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
-                <line x1="4" y1="12" x2="20" y2="12"></line>
-                <line x1="4" y1="6" x2="20" y2="6"></line>
-                <line x1="4" y1="18" x2="20" y2="18"></line>
-              </svg>
-            </button>
-          )}
-        </div>
-
-        {/* Right: Floating Structured CTA & Integration Badges */}
-        <div style={{ pointerEvents: "auto", display: "flex", alignItems: "center", gap: "12px" }}>
-
-
-          {!isSignedIn && isLoaded && (
-            <Link href="/signup" style={{ textDecoration: "none" }}>
-              <button style={{
-                padding: "6px 14px",
-                background: "#ffffff",
-                border: "1px solid #ffffff",
-                borderRadius: "6px",
-                color: "#000000",
-                cursor: "pointer",
-                fontSize: "13px",
-                fontWeight: 500,
-                fontFamily: T.font,
-                transition: "opacity .2s ease",
-              }}
-                onMouseEnter={e => { e.currentTarget.style.opacity = "0.9"; }}
-                onMouseLeave={e => { e.currentTarget.style.opacity = "1"; }}>
+      {/* ── Top bar (the shared page has its own header) ── */}
+      {!isSharedView && (
+      <TopBar
+        className="relative z-[100]"
+        left={
+          isSharedView ? (
+            <Crumb icon={<Lock />}>Shared project</Crumb>
+          ) : (
+            <Crumb icon={<FolderKanban />}>
+              <span className="max-w-[min(56vw,560px)] truncate" title={projectTitle}>{sessionId || isSharedView ? projectTitle : "New project"}</span>
+            </Crumb>
+          )
+        }
+        right={
+          !isSharedView && isLoaded && !isSignedIn ? (
+            <>
+              <Link href="/login" className={buttonClass("ghost", "sm")}>
                 Log in
-              </button>
-            </Link>
-          )}
-        </div>
-      </div>
+              </Link>
+              <Link href="/signup" className={buttonClass("dark", "sm")}>
+                Sign up
+              </Link>
+            </>
+          ) : null
+        }
+      />
+      )}
 
       {/* ── Main content ── */}
       <div style={{ flex: 1, position: "relative", display: "flex", flexDirection: "column", overflow: "hidden", zIndex: 1 }}>
@@ -902,148 +919,77 @@ export default function ChatPanel({
         <div
           ref={scrollableRef}
           onScroll={handleScroll}
-          style={{ flex: 1, overflowY: "auto", paddingBottom: "180px", display: "flex", flexDirection: "column" }}
+          style={{ flex: 1, overflowY: "auto", paddingBottom: isEmptyState ? 0 : "180px", display: "flex", flexDirection: "column" }}
         >
 
-          {/* ── Empty / Landing State (Functional Dashboard) ── */}
           {isInitialLoading ? (
-            <div style={{ display: "flex", flexDirection: "column", flex: 1, padding: "8vh 32px 32px", alignItems: "center", justifyContent: "center" }}>
-              <span style={{ fontSize: "14px", color: T.textHint, fontFamily: T.font, animation: "typingFade 2s infinite" }}>Loading conversation...</span>
+            <div className="flex flex-1 items-center justify-center">
+              <span className="text-sm text-pm-muted" style={{ animation: "typingFade 2s infinite" }}>
+                Loading conversation…
+              </span>
             </div>
           ) : messages.length === 0 ? (
-            <div style={{ display: "flex", flexDirection: "column", flex: 1, padding: "8vh 32px 32px", alignItems: "center" }}>
-              <div style={{ width: "100%", maxWidth: "720px", display: "flex", flexDirection: "column" }}>
-
-                {/* Dashboard Header */}
-                <div style={{ marginBottom: "32px", animation: "slideUp 0.3s ease-out both" }}>
-                  <span style={{ fontSize: "13px", fontWeight: 500, color: T.textMuted, textTransform: "uppercase", letterSpacing: "0.04em", display: "block", marginBottom: "8px" }}>
-                    ProdMate
-                  </span>
-                  <h1 style={{
-                    fontSize: "24px",
-                    fontWeight: 500,
-                    margin: "0",
-                    fontFamily: T.font,
-                    letterSpacing: "-0.02em",
-                    color: T.text,
-                    marginBottom: "12px",
-                  }}>
-                    {hasGeneratedConfig ? "Ask anything about your project" : "What are you building today?"}
+            /* ── Home screen: greeting, centred input, suggestions ── */
+            <div className="flex flex-1 flex-col items-center justify-center px-5 py-8 sm:px-8">
+              <div className="flex w-full max-w-2xl flex-col">
+                <div className="flex flex-col items-center text-center">
+                  <div className="pm-orb fade-up size-12 rounded-full" aria-hidden />
+                  <h1
+                    className="fade-up mt-6 text-[28px] leading-tight font-semibold tracking-tight text-pm-fg sm:text-[32px]"
+                    style={{ "--delay": "0.05s" } as React.CSSProperties}
+                  >
+                    {greeting}
+                    {firstName ? `, ${firstName}` : ""}
                   </h1>
-                  <p style={{
-                    fontSize: "14px",
-                    color: T.textMuted,
-                    lineHeight: "1.6",
-                    margin: "0",
-                    fontFamily: T.font,
-                  }}>
+                  <p
+                    className="fade-up mt-2 max-w-md text-[15px] leading-relaxed text-pm-muted text-pretty"
+                    style={{ "--delay": "0.1s" } as React.CSSProperties}
+                  >
                     {hasGeneratedConfig
-                      ? "Use ProdMate AI to write emails, schedule meetings, update roadmaps, and modify your product documentation."
-                      : "Describe your software idea and ProdMate will generate product requirements, roadmaps, user stories, API designs, database schemas, architecture plans and technical documentation."}
+                      ? "Ask anything about your project, or put it to work."
+                      : "Describe a software idea. ProdMate writes the PRD, roadmap, APIs, database schema and architecture."}
                   </p>
                 </div>
 
-                {/* Functional Template Grid */}
-                <div style={{
-                  display: "grid",
-                  gridTemplateColumns: "repeat(auto-fit, minmax(300px, 1fr))",
-                  gap: "12px",
-                  marginBottom: "48px"
-                }}>
-                  {hasGeneratedConfig ? (
-                    <>
-                      <TemplateCard
-                        title="Write an email"
-                        desc="Draft emails to clients or team members based on project status."
-                        icon={<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"></path><polyline points="22,6 12,13 2,6"></polyline></svg>}
-                        prompt="Write an email to my client with a project update."
-                        delay="0.1s"
-                        onClick={handleSuggestionClick}
-                      />
-                      <TemplateCard
-                        title="Schedule a meeting"
-                        desc="Schedule Google Meet calls with your team or stakeholders."
-                        icon={<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect><line x1="16" y1="2" x2="16" y2="6"></line><line x1="8" y1="2" x2="8" y2="6"></line><line x1="3" y1="10" x2="21" y2="10"></line></svg>}
-                        prompt="Schedule a 30 minute sprint review meeting for tomorrow."
-                        delay="0.15s"
-                        onClick={handleSuggestionClick}
-                      />
-                      <TemplateCard
-                        title="Update roadmap"
-                        desc="Modify the project timeline, add milestones or adjust phases."
-                        icon={<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M4 15s1-1 4-1 5 2 8 2 4-1 4-1V3s-1 1-4 1-5-2-8-2-4 1-4 1z"></path><line x1="4" y1="22" x2="4" y2="15"></line></svg>}
-                        prompt="Update the roadmap to include a new phase for AI integration."
-                        delay="0.2s"
-                        onClick={handleSuggestionClick}
-                      />
-                      <TemplateCard
-                        title="Modify database"
-                        desc="Update the database schema with new tables or relationships."
-                        icon={<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><ellipse cx="12" cy="5" rx="9" ry="3"></ellipse><path d="M21 12c0 1.66-4 3-9 3s-9-1.34-9-3"></path><path d="M3 5v14c0 1.66 4 3 9 3s9-1.34 9-3V5"></path></svg>}
-                        prompt="Modify the database schema to add user profiles and avatars."
-                        delay="0.25s"
-                        onClick={handleSuggestionClick}
-                      />
-                    </>
+                <div className="fade-up mt-8" style={{ "--delay": "0.15s" } as React.CSSProperties}>
+                  {isSharedView ? (
+                    <div className="flex items-center justify-center gap-2 rounded-2xl border border-dashed border-pm-line p-4 text-[13px] text-pm-muted">
+                      <Lock className="size-3.5" />
+                      This is a shared ProdMate conversation. Fork it to keep working on it.
+                    </div>
                   ) : (
-                    <>
-                      <TemplateCard
-                        title="AI SaaS Platform"
-                        desc="Generate complete planning for an AI-powered SaaS application."
-                        icon={<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M6 2L3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z"></path><line x1="3" y1="6" x2="21" y2="6"></line><path d="M16 10a4 4 0 0 1-8 0"></path></svg>}
-                        prompt="Build an AI SaaS platform where users can upload documents, chat with AI, manage workspaces and collaborate with teams. Generate a complete Product Requirement Document, User Stories, Product Roadmap, API Design, Database Schema, System Architecture, Folder Structure, Testing Plan, Deployment Guide and Technical Documentation."
-                        delay="0.1s"
-                        onClick={handleSuggestionClick}
-                      />
-                      <TemplateCard
-                        title="E-Commerce Marketplace"
-                        desc="Plan a scalable marketplace with products, orders and payments."
-                        icon={<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"></polyline></svg>}
-                        prompt="Build an e-commerce marketplace similar to Amazon with authentication, products, inventory, shopping cart, orders, payments and seller dashboard. Generate complete planning documents including PRD, User Stories, Roadmap, APIs, Database Schema, Architecture and Deployment Guide."
-                        delay="0.15s"
-                        onClick={handleSuggestionClick}
-                      />
-                      <TemplateCard
-                        title="Social Media Platform"
-                        desc="Design a modern social network with feeds and messaging."
-                        icon={<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path><circle cx="9" cy="7" r="4"></circle><path d="M23 21v-2a4 4 0 0 0-3-3.87"></path><path d="M16 3.13a4 4 0 0 1 0 7.75"></path></svg>}
-                        prompt="Build a social media platform similar to Instagram with authentication, profiles, posts, comments, likes, followers, messaging and notifications. Generate complete planning artifacts including PRD, Roadmap, APIs, Database Schema and Architecture."
-                        delay="0.2s"
-                        onClick={handleSuggestionClick}
-                      />
-                      <TemplateCard
-                        title="Hospital Management System"
-                        desc="Generate planning for a complete healthcare management platform."
-                        icon={<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect><line x1="12" y1="8" x2="12" y2="16"></line><line x1="8" y1="12" x2="16" y2="12"></line></svg>}
-                        prompt="Build a hospital management system with patients, doctors, appointments, pharmacy, billing and reports. Generate Product Requirements, User Stories, Roadmap, API Design, Database Schema, Folder Structure, System Architecture, Testing Plan and Deployment Guide."
-                        delay="0.25s"
-                        onClick={handleSuggestionClick}
-                      />
-                    </>
+                    <InputArea
+                      variant="hero"
+                      input={input}
+                      textareaRef={textareaRef}
+                      tokenQuota={tokenQuota}
+                      handleInputChange={handleInputChange}
+                      handleKeyDown={handleKeyDown}
+                      handleSend={handleSend}
+                      isTyping={isTyping || isExporting}
+                      hasGeneratedConfig={hasGeneratedConfig}
+                    />
                   )}
                 </div>
+
+                <p className="fade-up mt-3 px-1 text-xs text-pm-muted" style={{ "--delay": "0.18s" } as React.CSSProperties}>
+                  ProdMate can make mistakes. Check important details before you build on them.
+                </p>
+
               </div>
             </div>
-
           ) : (
             /* ── Message list ── */
-            <div style={{ maxWidth: "900px", width: "100%", margin: "0 auto", padding: "64px 32px 32px", display: "flex", flexDirection: "column", gap: "24px" }}>
+            <div className="mx-auto flex w-full max-w-[820px] flex-col gap-7 px-4 pt-4 pb-8 sm:px-8">
               {messages.map((msg, idx) => (
                 <div key={msg.id}
-                  style={{ display: "flex", width: "100%", justifyContent: msg.role === "user" ? "flex-end" : "flex-start" }}
+                  className={`group/msg flex w-full ${msg.role === "user" ? "justify-end" : "justify-start"}`}
                   onContextMenu={e => { e.preventDefault(); setContextMenu({ visible: true, x: e.clientX, y: e.clientY, messageId: msg.id, messageContent: msg.content, messageRole: msg.role }); }}>
 
                   {msg.role === "user" ? (
-                    <div style={{ display: "flex", gap: "16px", width: "100%", maxWidth: "85%", justifyContent: "flex-end", alignItems: "flex-start" }}>
-                      <div style={{
-                        background: "rgba(255, 255, 255, 0.08)",
-                        padding: "12px 20px",
-                        borderRadius: "24px",
-                        color: T.text,
-                        fontSize: "15px",
-                        lineHeight: "1.5",
-                        fontFamily: T.font
-                      }}>
+                    <div className="flex max-w-[85%] items-start gap-3">
+                    <div className="flex min-w-0 flex-col items-end gap-1">
+                      <div className="rounded-3xl rounded-br-lg bg-pm-shell px-4 py-2.5 text-[15px] leading-relaxed text-pm-fg [overflow-wrap:anywhere]">
                         <div style={{ whiteSpace: "pre-line" }}
                           dangerouslySetInnerHTML={{
                             __html: msg.content
@@ -1055,43 +1001,36 @@ export default function ChatPanel({
                           }}
                         />
                       </div>
-                      <div style={{
-                        width: "32px", height: "32px", borderRadius: "16px", flexShrink: 0, overflow: "hidden",
-                        background: "rgba(255,255,255,0.1)", display: "flex", alignItems: "center", justifyContent: "center", color: "#ffffff", marginTop: "4px"
-                      }}>
-                        {user?.imageUrl ? (
-                          <img src={user.imageUrl} alt="User" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
-                        ) : (
-                          <UserCircleIcon size={20} />
-                        )}
-                      </div>
+                      <MessageActions content={msg.content} align="end" onEdit={!isSharedView ? () => handleEditMessage(msg.id, msg.content) : undefined} />
+                    </div>
+                    {/* Your avatar (shared views show the owner's initial) */}
+                    <UserAvatar imageUrl={isSharedView ? undefined : user?.imageUrl || cachedImageUrl || undefined} name={isSharedView ? sharedData?.metadata?.ownerName : displayName} />
                     </div>
                   ) : (
-                    <div style={{ display: "flex", gap: "16px", width: "100%", maxWidth: "85%" }}>
-                      {/* Assistant Avatar */}
-                      <div style={{
-                        width: "32px", height: "32px", flexShrink: 0,
-                        color: "#ffffff",
-                        display: "flex", alignItems: "center", justifyContent: "center",
-                        marginTop: "4px"
-                      }}>
-                        <AppIcon size={28} />
-                      </div>
+                    <div className="flex w-full gap-3.5">
+                      {/* Assistant avatar */}
+                      <span className="mt-0.5 grid size-8 shrink-0 place-items-center rounded-xl border border-pm-line bg-pm-card text-pm-fg">
+                        <LogoMark className="size-[18px]" />
+                      </span>
 
-                      <div style={{ display: "flex", flexDirection: "column", width: "100%", minWidth: 0 }}>
+                      <div className="flex w-full min-w-0 flex-col">
+                        <div className="mb-1 flex h-8 items-center gap-2 text-[13px]">
+                          <span className="font-semibold text-pm-fg">ProdMate</span>
+                          {msg.timestamp && <span className="text-xs text-pm-muted">{msg.timestamp}</span>}
+                        </div>
                         {/* Tool badges */}
                         {msg.tools && (
                           <div style={{ display: "flex", gap: "6px", marginBottom: "8px", flexWrap: "wrap" }}>
                             {msg.tools.map(t => (
-                              <span key={t} style={{ fontSize: "11px", color: T.textMuted, background: T.surfaceHover, border: `1px solid ${T.border}`, padding: "2px 6px", fontFamily: T.font, borderRadius: "4px" }}>{t}</span>
+                              <span key={t} className="inline-flex h-6 items-center gap-1 rounded-full border border-pm-line bg-pm-shell px-2.5 text-[11px] font-medium text-pm-fg/70"><Wrench className="size-3" />{t}</span>
                             ))}
                           </div>
                         )}
 
                         {/* Message body */}
-                        <div style={{ width: "100%", color: "rgba(255,255,255,0.9)", fontSize: "15px", lineHeight: "1.6", whiteSpace: "pre-line", fontFamily: T.font }}>
+                        <div className="w-full text-[15px] leading-[1.7] whitespace-pre-line text-pm-fg [overflow-wrap:anywhere] [&_strong]:font-semibold">
                           {(() => {
-                            let text = msg.content
+                            let text = humanizeStatus(msg.content)
                               .replace(/\n\n\[System Context:[\s\S]*?\]/, '')
                               .replace(/\n\nCurrent Draft:\n[\s\S]*/, '')
                               .split('<').join('&lt;').split('>').join('&gt;');
@@ -1121,7 +1060,7 @@ export default function ChatPanel({
                                 parts.push(<span key={`text-${lastIndex}`} dangerouslySetInnerHTML={{ __html: formatText(chunk) }} />);
                               }
                               parts.push(
-                                <div key={`folder-${match.index}`} style={{ margin: "16px 0", border: `1px solid ${T.border}`, borderRadius: "8px", overflow: "hidden" }}>
+                                <div key={`folder-${match.index}`} className="my-4 whitespace-normal">
                                   <FolderStructureViewer content={match[1]} />
                                 </div>
                               );
@@ -1134,7 +1073,7 @@ export default function ChatPanel({
 
                             if (fallbackFolder) {
                                parts.push(
-                                 <div key="fallback-folder" style={{ margin: "16px 0", border: `1px solid ${T.border}`, borderRadius: "8px", overflow: "hidden" }}>
+                                 <div key="fallback-folder" className="my-4 whitespace-normal">
                                    <FolderStructureViewer content={fallbackFolder.trim()} />
                                  </div>
                                );
@@ -1144,27 +1083,23 @@ export default function ChatPanel({
                           })()}
                         </div>
 
-                        {/* File artifact card */}
+                        {/* Artifact card */}
                         {msg.file && (
-                          <div style={{ marginTop: "16px", border: `1px solid ${T.border}`, background: T.surface, borderRadius: "8px", overflow: "hidden" }}>
-                            <FileHeader msg={msg} markdownMode={markdownMode} setMarkdownMode={setMarkdownMode} />
-                            <div style={{ overflowX: "auto" }}>
-                              <FileContentRenderer msg={msg} markdownMode={markdownMode} />
-                            </div>
-
-                            {/* Modify button */}
-                            {msg.role === "assistant" && msg.file.language !== "dbschema" && !isSharedView && (
-                              <div style={{ padding: "8px 12px", borderTop: `1px solid ${T.border}`, display: "flex", justifyContent: "flex-end", background: T.surfaceHover }}>
-                                <button
-                                  onClick={() => { const target = LANG_TO_ARTIFACT[msg.file!.language] ?? "config"; setModifyMode(true); setModifyTargetArtifact(target); textareaRef.current?.focus(); }}
-                                  style={{ padding: "4px 12px", background: "transparent", border: `1px solid ${T.border}`, color: T.textMuted, fontSize: "12px", fontFamily: T.font, cursor: "pointer", borderRadius: "4px", transition: "all .15s" }}
-                                  onMouseEnter={e => { e.currentTarget.style.borderColor = T.textMuted; e.currentTarget.style.color = T.text; }}
-                                  onMouseLeave={e => { e.currentTarget.style.borderColor = T.border; e.currentTarget.style.color = T.textMuted; }}>
-                                  Modify
-                                </button>
-                              </div>
-                            )}
-                          </div>
+                          <ArtifactCard
+                            msg={msg}
+                            markdownMode={markdownMode}
+                            setMarkdownMode={setMarkdownMode}
+                            onModify={
+                              msg.role === "assistant" && msg.file.language !== "dbschema" && !isSharedView
+                                ? () => {
+                                    const target = LANG_TO_ARTIFACT[msg.file!.language] ?? "config";
+                                    setModifyMode(true);
+                                    setModifyTargetArtifact(target);
+                                    textareaRef.current?.focus();
+                                  }
+                                : undefined
+                            }
+                          />
                         )}
 
                         {/* Conversational AI Actions */}
@@ -1190,25 +1125,7 @@ export default function ChatPanel({
 
                         {/* Final Markdown Project Ready Banner & Integrations */}
                         {msg.role === "assistant" && msg.file?.language === "finalmarkdown" && !isSharedView && (
-                          <div style={{ display: "flex", flexDirection: "column", gap: "16px", marginTop: "16px" }}>
-                            <div style={{
-                              display: "flex", alignItems: "center", justifyContent: "center", padding: "16px",
-                              border: `1px dashed rgba(255, 255, 255, 0.15)`, borderRadius: "12px",
-                              background: "rgba(255, 255, 255, 0.01)", cursor: "pointer", transition: "all 0.2s ease"
-                            }} onClick={() => textareaRef.current?.focus()}
-                              onMouseEnter={e => { e.currentTarget.style.background = "rgba(255, 255, 255, 0.03)"; e.currentTarget.style.borderColor = "rgba(255, 255, 255, 0.3)"; }}
-                              onMouseLeave={e => { e.currentTarget.style.background = "rgba(255, 255, 255, 0.01)"; e.currentTarget.style.borderColor = "rgba(255, 255, 255, 0.15)"; }}>
-                              <span style={{ fontSize: "13px", color: T.textHint, display: "flex", alignItems: "center", gap: "8px", fontFamily: T.font }}>
-                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                                  <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path>
-                                  <polyline points="22 4 12 14.01 9 11.01"></polyline>
-                                </svg>
-                                <span style={{ color: T.text, fontWeight: 500 }}>Project Ready</span>
-                                •
-                                Continue refining or ask questions about your project
-                              </span>
-                            </div>
-
+                          <div>
                             <FinalSummaryCard
                               events={liveEvents}
                               githubUrl={msg.githubUrl}
@@ -1221,21 +1138,33 @@ export default function ChatPanel({
 
                         {/* Option buttons */}
                         {msg.options && msg.options.length > 0 && msg.role === "assistant" && !isSharedView && (
-                          <div style={{ display: "flex", gap: "8px", marginTop: "16px", flexWrap: "wrap", alignItems: "center" }}>
-                            {msg.options?.map((option, i) => {
-                              const isClicked = messages.some(m => m.role === "user" && m.content === option);
-                              const isDisabled = isClicked || isTyping;
-                              return (
-                                <button key={i} onClick={() => { if (!isDisabled) handleOptionClick(option); }}
-                                  style={{ padding: "6px 12px", background: isClicked ? "transparent" : T.surfaceHover, border: `1px solid ${isClicked ? T.border : T.borderHover}`, color: isClicked ? T.textHint : T.textMuted, fontSize: "12px", fontFamily: T.font, cursor: isDisabled ? "default" : "pointer", transition: "all .15s", borderRadius: "6px", opacity: isDisabled ? 0.5 : 1 }}
-                                  onMouseEnter={e => { if (!isDisabled) { (e.currentTarget as HTMLButtonElement).style.background = T.text; (e.currentTarget as HTMLButtonElement).style.color = T.bg; (e.currentTarget as HTMLButtonElement).style.borderColor = T.text; } }}
-                                  onMouseLeave={e => { if (!isDisabled) { (e.currentTarget as HTMLButtonElement).style.background = T.surfaceHover; (e.currentTarget as HTMLButtonElement).style.color = T.textMuted; (e.currentTarget as HTMLButtonElement).style.borderColor = T.borderHover; } }}>
-                                  {option}
-                                </button>
-                              );
-                            })}
+                          <div className="mt-4">
+                            <div className="mb-2 text-[11px] font-medium tracking-wide text-pm-muted uppercase">Next steps</div>
+                            <div className="flex flex-wrap gap-2">
+                              {msg.options?.map((option, i) => {
+                                const isClicked = messages.some(m => m.role === "user" && m.content === option);
+                                const isDisabled = isClicked || isTyping;
+                                return (
+                                  <button
+                                    key={i}
+                                    type="button"
+                                    disabled={isDisabled}
+                                    onClick={() => handleOptionClick(option)}
+                                    className={`group/chip inline-flex h-8 items-center gap-1.5 rounded-full border px-3 text-[13px] font-medium transition-colors ${
+                                      isClicked
+                                        ? "border-pm-line bg-transparent text-pm-muted"
+                                        : "border-pm-line bg-pm-card text-pm-fg/85 hover:border-pm-primary/40 hover:bg-pm-primary/[0.06] hover:text-pm-accent disabled:opacity-50"
+                                    }`}
+                                  >
+                                    {isClicked ? <Check className="size-3.5" /> : <ArrowRight className="size-3.5 text-pm-muted transition-colors group-hover/chip:text-pm-accent" />}
+                                    {option}
+                                  </button>
+                                );
+                              })}
+                            </div>
                           </div>
                         )}
+                        <MessageActions content={msg.content} />
                       </div>
                     </div>
                   )}
@@ -1244,11 +1173,11 @@ export default function ChatPanel({
 
               {/* Typing indicator */}
               {!isSharedView && (isTyping || isExporting) && (
-                <div style={{ display: "flex", gap: "16px", padding: "24px 0" }}>
-                  <div style={{ width: "32px", height: "32px", flexShrink: 0, color: "#ffffff", display: "flex", alignItems: "center", justifyContent: "center" }}>
-                    <AppIcon size={24} />
-                  </div>
-                  <div style={{ display: "flex", alignItems: "center", height: "24px" }}>
+                <div className="flex gap-3.5">
+                  <span className="relative mt-0.5 grid size-8 shrink-0 place-items-center rounded-xl border border-pm-line bg-pm-card text-pm-fg">
+                    <LogoMark className="size-[18px] animate-pulse" />
+                  </span>
+                  <div className="flex min-h-8 items-center">
                     <TypingStatusText artifact={generatingArtifact} isExporting={isExporting} />
                   </div>
                 </div>
@@ -1261,129 +1190,75 @@ export default function ChatPanel({
           )}
         </div>
 
-        {/* Blur Backdrop */}
-        <div style={{
-          position: "absolute",
-          bottom: 0,
-          left: 0,
-          right: 0,
-          height: "180px",
-          background: "linear-gradient(to top, rgba(9, 9, 11, 0.9) 20%, rgba(9, 9, 11, 0) 100%)",
-          backdropFilter: "blur(8px)",
-          WebkitBackdropFilter: "blur(8px)",
-          maskImage: "linear-gradient(to top, black 40%, transparent 100%)",
-          WebkitMaskImage: "linear-gradient(to top, black 40%, transparent 100%)",
-          pointerEvents: "none",
-          zIndex: 10,
-        }} />
+        {!isEmptyState && (
+          <>
+            {/* Fade under the input dock */}
+            <div
+              className="pointer-events-none absolute inset-x-0 bottom-0 z-10 h-40"
+              style={{ background: "linear-gradient(to top, var(--pm-card) 45%, color-mix(in oklch, var(--pm-card) 0%, transparent))" }}
+            />
 
-        {/* ── Fixed input area ── */}
-        <div style={{
-          position: "absolute",
-          bottom: 0,
-          left: 0,
-          right: 0,
-          padding: "0px 32px 32px",
-          pointerEvents: "none",
-          zIndex: 11,
-        }}>
-          <div style={{ width: "100%", maxWidth: "800px", margin: "0 auto", pointerEvents: "auto" }}>
-
-            {isSharedView ? (
-              <>
-                {/* ── Premium Read-Only Placeholder Box ── */}
-                <div style={{
-                  display: "flex", alignItems: "center", justifyContent: "center", padding: "16px",
-                  background: "rgba(255, 255, 255, 0.01)", border: "1px dashed rgba(255, 255, 255, 0.15)",
-                  borderRadius: "12px", width: "100%",
-                }}>
-                  <span style={{ fontSize: "13px", color: "#a1a1aa", display: "flex", alignItems: "center", gap: "8px" }}>
-                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                      <rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect>
-                      <path d="M7 11V7a5 5 0 0 1 10 0v4"></path>
-                    </svg>
+            {/* ── Input dock ── */}
+            <div className="pointer-events-none absolute inset-x-0 bottom-0 z-[11] px-4 pb-5 sm:px-8 sm:pb-6">
+              <div className="pointer-events-auto mx-auto w-full max-w-3xl">
+                {isSharedView ? (
+                  <div className="flex items-center justify-center gap-2 rounded-2xl border border-dashed border-pm-line bg-pm-card p-4 text-[13px] text-pm-muted">
+                    <Lock className="size-3.5" />
                     This is a shared ProdMate conversation. Fork this project to continue working on it.
-                  </span>
-                </div>
-              </>
-            ) : (
-              <>
-                {/* Modify mode banner */}
-                {modifyMode && modifyTargetArtifact && (
-                  <div style={{
-                    display: "flex", alignItems: "center", gap: "10px", marginBottom: "12px", padding: "8px 12px",
-                    border: `1px solid ${T.borderHover}`, borderRadius: "8px",
-                    background: T.surfaceHover,
-                  }}>
-                    <div style={{ width: "4px", height: "4px", borderRadius: "2px", background: T.text, flexShrink: 0 }} />
-                    <span style={{ fontSize: "12px", fontFamily: T.font, color: T.text, fontWeight: 500 }}>Targeting: {modifyTargetArtifact}</span>
-                    <span style={{ fontSize: "12px", fontFamily: T.font, color: T.textHint, flex: 1 }}>Only this artifact will regenerate</span>
-                    <button
-                      onClick={() => { setModifyMode(false); setModifyTargetArtifact(null); }}
-                      style={{ background: "none", border: "none", color: T.textHint, cursor: "pointer", fontSize: "12px", fontFamily: T.font, padding: "0 4px", transition: "color .15s" }}
-                      onMouseEnter={e => e.currentTarget.style.color = T.text}
-                      onMouseLeave={e => e.currentTarget.style.color = T.textHint}>
-                      ✕ Cancel
-                    </button>
                   </div>
+                ) : (
+                  <>
+                    {modifyMode && modifyTargetArtifact && (
+                      <div className="mb-2 flex items-center gap-2.5 rounded-xl border border-pm-primary/25 bg-pm-primary/[0.06] px-3 py-2 text-xs">
+                        <span className="size-1.5 shrink-0 rounded-full bg-pm-primary" />
+                        <span className="font-medium text-pm-accent">Editing: {modifyTargetArtifact}</span>
+                        <span className="flex-1 text-pm-muted">Only this artifact will regenerate</span>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setModifyMode(false);
+                            setModifyTargetArtifact(null);
+                          }}
+                          className="font-medium text-pm-muted transition-colors hover:text-pm-fg"
+                        >
+                          Cancel
+                        </button>
+                      </div>
+                    )}
+
+                    <InputArea
+                      input={input}
+                      textareaRef={textareaRef}
+                      tokenQuota={tokenQuota}
+                      handleInputChange={handleInputChange}
+                      handleKeyDown={handleKeyDown}
+                      handleSend={handleSend}
+                      isTyping={isTyping || isExporting}
+                      hasGeneratedConfig={hasGeneratedConfig}
+                    />
+                  </>
                 )}
+              </div>
+            </div>
+          </>
+        )}
 
-                {messages.length === 0 && (
-                  <div style={{ marginBottom: "12px", fontSize: "13px", fontWeight: 500, color: T.textMuted }}>Or start with your own product idea</div>
-                )}
-
-                <InputArea
-                  input={input}
-                  textareaRef={textareaRef}
-                  tokenQuota={tokenQuota}
-                  handleInputChange={handleInputChange}
-                  handleKeyDown={handleKeyDown}
-                  handleSend={handleSend}
-                  isTyping={isTyping || isExporting}
-                  hasGeneratedConfig={hasGeneratedConfig}
-                />
-              </>
-            )}
-          </div>
-        </div>
-
-        {/* Scroll Down Button */}
-        {showScrollDown && (
+        {/* Scroll to bottom */}
+        {showScrollDown && !isEmptyState && (
           <button
+            type="button"
             onClick={scrollToBottom}
-            style={{
-              position: "absolute",
-              bottom: "120px", // Just above the gradient fade
-              right: "48px",
-              width: "40px",
-              height: "40px",
-              borderRadius: "50%",
-              background: T.surfaceHover,
-              border: `1px solid ${T.borderHover}`,
-              color: T.text,
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "center",
-              cursor: "pointer",
-              boxShadow: "0 4px 12px rgba(0,0,0,0.5)",
-              zIndex: 20,
-              transition: "all 0.2s ease",
-            }}
-            onMouseEnter={e => { e.currentTarget.style.background = "#ffffff"; e.currentTarget.style.color = "#000000"; }}
-            onMouseLeave={e => { e.currentTarget.style.background = T.surfaceHover; e.currentTarget.style.color = T.text; }}
             aria-label="Scroll to bottom"
+            className="absolute right-8 bottom-32 z-20 grid size-9 place-items-center rounded-full border border-pm-line bg-pm-card text-pm-fg/70 shadow-md transition-colors hover:text-pm-fg"
           >
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-              <line x1="12" y1="5" x2="12" y2="19"></line>
-              <polyline points="19 12 12 19 5 12"></polyline>
-            </svg>
+            <ArrowDown className="size-4" />
           </button>
         )}
       </div>
 
       {/* ── Context menu ── */}
       {contextMenu?.visible && (
-        <div ref={contextMenuRef} style={{ position: "fixed", left: `${contextMenu.x}px`, top: `${contextMenu.y}px`, background: T.surface, border: `1px solid ${T.border}`, borderRadius: "8px", padding: "4px", zIndex: 1000, minWidth: "140px", boxShadow: "0 12px 24px rgba(0,0,0,0.5)", fontFamily: T.font }}>
+        <div ref={contextMenuRef} style={{ position: "fixed", left: `${contextMenu.x}px`, top: `${contextMenu.y}px`, background: "var(--pm-card)", border: `1px solid ${T.border}`, borderRadius: "12px", padding: "4px", zIndex: 1000, minWidth: "160px", boxShadow: "0 12px 32px -8px rgba(0,0,0,0.18)", fontFamily: T.font }}>
           {[{ label: "Copy", action: () => handleCopyMessage(contextMenu.messageContent), color: T.textMuted },
           ...(contextMenu.messageRole === "user" ? [{ label: "Edit", action: () => handleEditMessage(contextMenu.messageId, contextMenu.messageContent), color: T.textMuted }] : [])
           ].map(item => (
@@ -1396,8 +1271,8 @@ export default function ChatPanel({
           ))}
           <div style={{ height: "1px", background: T.border, margin: "4px 0" }} />
           <button onClick={() => handleDeleteMessage(contextMenu.messageId)}
-            style={{ width: "100%", padding: "6px 10px", background: "transparent", border: "none", color: "#ef4444", fontSize: "13px", fontFamily: T.font, textAlign: "left", cursor: "pointer", borderRadius: "4px", transition: "background .1s" }}
-            onMouseEnter={e => { e.currentTarget.style.background = "rgba(239,68,68,0.1)"; }}
+            style={{ width: "100%", padding: "6px 10px", background: "transparent", border: "none", color: "var(--pm-danger)", fontSize: "13px", fontFamily: T.font, textAlign: "left", cursor: "pointer", borderRadius: "6px", transition: "background .1s" }}
+            onMouseEnter={e => { e.currentTarget.style.background = "#fef2f2"; }}
             onMouseLeave={e => { e.currentTarget.style.background = "transparent"; }}>
             Delete
           </button>
@@ -1411,11 +1286,6 @@ export default function ChatPanel({
         @keyframes typingDot { 0%,80%,100%{opacity:0.3;transform:scale(0.8)} 40%{opacity:1;transform:scale(1)} }
         @keyframes typingFade { 0%, 100% { opacity: 0.5; } 50% { opacity: 1; } }
         @keyframes slideUp { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
-        textarea::placeholder { color: #71717a !important; font-family: var(--font-satoshi), system-ui, sans-serif !important; }
-        ::-webkit-scrollbar { width: 4px; height: 4px; }
-        ::-webkit-scrollbar-track { background: transparent; }
-        ::-webkit-scrollbar-thumb { background: #1f1f1f; border-radius: 4px; }
-        ::-webkit-scrollbar-thumb:hover { background: #2a2a2a; }
       `}} />
     </div>
   );

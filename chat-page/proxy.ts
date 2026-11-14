@@ -1,16 +1,11 @@
-import { clerkMiddleware, createRouteMatcher } from "@clerk/nextjs/server";
+import { clerkMiddleware } from "@clerk/nextjs/server";
 import type { NextRequest } from "next/server";
 import type { NextFetchEvent } from "next/server";
 
-// Routes that require authentication — unauthenticated users
-// will be redirected to the Clerk sign-in page.
-const isProtectedRoute = createRouteMatcher(["/settings(.*)"]);
-
-const clerkProxy = clerkMiddleware(async (auth, req) => {
-  if (isProtectedRoute(req)) {
-    await auth.protect();
-  }
-});
+// Runs Clerk on every request so auth() works in pages and API routes. Protected pages check
+// sign-in themselves and call unauthorized(), which renders app/unauthorized.tsx with a 401
+// (see app/settings/layout.tsx), instead of redirecting here.
+const clerkProxy = clerkMiddleware();
 
 export function proxy(request: NextRequest, event: NextFetchEvent) {
   return clerkProxy(request, event);

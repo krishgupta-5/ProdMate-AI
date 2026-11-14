@@ -1,6 +1,8 @@
 "use client";
 
 import React from "react";
+import { ChevronDown } from "lucide-react";
+import { cn } from "@/lib/cn";
 import { 
   IconBrandDocker, 
   IconBrandTypescript, 
@@ -53,7 +55,7 @@ export default function FolderStructureViewer({
   const getFileIconAndColor = (filename: string, isFolder: boolean) => {
     if (isFolder) {
       if (filename.toLowerCase() === '.github') {
-        return { color: "#A1A1AA", icon: <IconBrandGithub size={16} /> };
+        return { color: "var(--pm-muted)", icon: <IconBrandGithub size={16} /> };
       }
       return { color: "#60A5FA", icon: <IconFolderFilled size={16} /> };
     }
@@ -64,40 +66,40 @@ export default function FolderStructureViewer({
       return { color: "#2496ED", icon: <IconBrandDocker size={16} /> };
     }
     if (lowerName === 'package.json') {
-      return { color: "#4ADE80", icon: <IconJson size={16} /> };
+      return { color: "#16a34a", icon: <IconJson size={16} /> };
     }
     if (lowerName === 'package-lock.json' || lowerName === 'yarn.lock') {
-      return { color: "#A1A1AA", icon: <IconLock size={16} /> };
+      return { color: "var(--pm-muted)", icon: <IconLock size={16} /> };
     }
     if (lowerName === '.gitignore' || lowerName === '.gitattributes') {
       return { color: "#F05032", icon: <IconBrandGithub size={16} /> };
     }
     if (lowerName.startsWith('.env')) {
-      return { color: "#FDE047", icon: <IconSettings size={16} /> };
+      return { color: "#ca8a04", icon: <IconSettings size={16} /> };
     }
     if (lowerName === 'readme.md' || lowerName === 'readme') {
       return { color: "#38BDF8", icon: <IconFileDescription size={16} /> };
     }
     if (lowerName.includes('config') || lowerName.includes('.rc')) {
-      return { color: "#A1A1AA", icon: <IconSettings size={16} /> };
+      return { color: "var(--pm-muted)", icon: <IconSettings size={16} /> };
     }
 
     const ext = filename.split('.').pop()?.toLowerCase();
     switch (ext) {
       case 'ts': return { color: "#3178C6", icon: <IconBrandTypescript size={16} /> };
-      case 'tsx': return { color: "#61DAFB", icon: <IconBrandReact size={16} /> };
+      case 'tsx': return { color: "#0891b2", icon: <IconBrandReact size={16} /> };
       case 'js':
-      case 'jsx': return { color: "#F7DF1E", icon: <IconBrandJavascript size={16} /> };
-      case 'json': return { color: "#4ADE80", icon: <IconJson size={16} /> };
+      case 'jsx': return { color: "#ca8a04", icon: <IconBrandJavascript size={16} /> };
+      case 'json': return { color: "#16a34a", icon: <IconJson size={16} /> };
       case 'md':
-      case 'mdx': return { color: "#A1A1AA", icon: <IconMarkdown size={16} /> };
+      case 'mdx': return { color: "var(--pm-muted)", icon: <IconMarkdown size={16} /> };
       case 'css':
       case 'scss': return { color: "#38BDF8", icon: <IconBrandCss3 size={16} /> };
       case 'py': return { color: "#3776AB", icon: <IconBrandPython size={16} /> };
       case 'sql':
       case 'db': return { color: "#F87171", icon: <IconDatabase size={16} /> };
-      case 'txt': return { color: "#A1A1AA", icon: <IconFileTypeTxt size={16} /> };
-      default: return { color: "#D4D4D8", icon: <IconFileCode size={16} /> };
+      case 'txt': return { color: "var(--pm-muted)", icon: <IconFileTypeTxt size={16} /> };
+      default: return { color: "var(--pm-muted)", icon: <IconFileCode size={16} /> };
     }
   };
 
@@ -157,72 +159,64 @@ export default function FolderStructureViewer({
     }
   }
 
-  return (
-    <div
-      style={{
-        fontFamily: 'system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif',
-        fontSize: "13px",
-        padding: "12px 16px",
-        background: "#0d0d0f",
-        border: "1px solid rgba(255, 255, 255, 0.08)",
-        borderRadius: "12px",
-        boxShadow: "0 4px 12px rgba(0, 0, 0, 0.2)"
-      }}
-    >
-      <style>{`
-        .vsc-row {
-          display: flex;
-          align-items: center;
-          height: 26px;
-          cursor: pointer;
-          user-select: none;
-          padding-right: 12px;
-          border-radius: 4px;
-          transition: background-color 0.15s ease;
-        }
-        .vsc-row:hover {
-          background-color: rgba(255, 255, 255, 0.06);
-        }
-      `}</style>
-      {visibleLines.map((node) => {
-        const { index, cleanNodeName, isFolder, indentPx, isRootProject } = node;
-        const { color, icon } = getFileIconAndColor(cleanNodeName, isFolder);
-        const isCollapsed = collapsedPaths.has(index);
+  const folderCount = parsedLines.filter((n) => n.isFolder && !n.isRootProject).length;
+  const fileCount = parsedLines.filter((n) => !n.isFolder).length;
+  const allFolderIdx = parsedLines.filter((n) => n.isFolder && !n.isRootProject).map((n) => n.index);
+  const anyCollapsed = collapsedPaths.size > 0;
 
-        return (
-          <div 
-            key={index} 
-            className="vsc-row" 
-            style={{ paddingLeft: `${indentPx}px` }}
-            onClick={() => isFolder && toggleFolder(index)}
+  return (
+    <div className="overflow-hidden rounded-xl border border-pm-line bg-pm-code text-[13px]">
+      <div className="flex items-center justify-between gap-3 border-b border-pm-line px-3 py-2 text-xs text-pm-muted">
+        <span>
+          <span className="font-medium text-pm-fg tabular-nums">{folderCount}</span> folders ·{" "}
+          <span className="font-medium text-pm-fg tabular-nums">{fileCount}</span> files
+        </span>
+        {folderCount > 0 && (
+          <button
+            type="button"
+            onClick={() => setCollapsedPaths(anyCollapsed ? new Set() : new Set(allFolderIdx))}
+            className="rounded-md px-2 py-0.5 font-medium transition-colors hover:bg-pm-hover hover:text-pm-fg"
           >
-            <div style={{ width: "16px", display: "flex", justifyContent: "center", flexShrink: 0, marginRight: "4px" }}>
-              {isFolder ? (
-                <svg 
-                  width="16" height="16" viewBox="0 0 16 16" fill="none"
-                  style={{ 
-                    transform: isCollapsed ? "rotate(-90deg)" : "rotate(0deg)", 
-                    transition: "transform 0.15s ease" 
-                  }}
-                >
-                  <path d="M4 6L8 10L12 6" stroke="#858585" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
-                </svg>
-              ) : null}
-            </div>
-            
-            <span style={{ color, opacity: 0.9, marginRight: "6px", display: "flex" }}>{icon}</span>
-            <span
-              style={{
-                color: isRootProject ? "#FAFAFA" : (isFolder ? "#E4E4E7" : "#D4D4D8"),
-                fontWeight: isRootProject ? 600 : (isFolder ? 500 : 400),
-                letterSpacing: isRootProject ? "0.3px" : "0.2px"
-              }}
+            {anyCollapsed ? "Expand all" : "Collapse all"}
+          </button>
+        )}
+      </div>
+      <div className="px-2 py-2 font-mono">
+        {visibleLines.map((node) => {
+          const { index, cleanNodeName, isFolder, indentPx, isRootProject } = node;
+          const { color, icon } = getFileIconAndColor(cleanNodeName, isFolder);
+          const isCollapsed = collapsedPaths.has(index);
+
+          return (
+            <div
+              key={index}
+              role={isFolder ? "button" : undefined}
+              aria-expanded={isFolder ? !isCollapsed : undefined}
+              className={cn(
+                "flex h-[26px] items-center rounded-md pr-3 transition-colors select-none hover:bg-pm-hover",
+                isFolder && "cursor-pointer",
+              )}
+              style={{ paddingLeft: `${indentPx}px` }}
+              onClick={() => isFolder && toggleFolder(index)}
             >
-              {cleanNodeName}
-            </span>
-          </div>
-        );
-      })}
+              <span className="mr-1 flex w-4 shrink-0 justify-center text-pm-muted">
+                {isFolder && <ChevronDown className={cn("size-3.5 transition-transform", isCollapsed && "-rotate-90")} />}
+              </span>
+              <span className="mr-1.5 flex shrink-0" style={{ color }}>
+                {icon}
+              </span>
+              <span
+                className={cn(
+                  "truncate",
+                  isRootProject ? "font-semibold text-pm-fg" : isFolder ? "font-medium text-pm-fg/90" : "text-pm-fg/75",
+                )}
+              >
+                {cleanNodeName}
+              </span>
+            </div>
+          );
+        })}
+      </div>
     </div>
   );
 }

@@ -1,18 +1,10 @@
 "use client";
 
 import React from "react";
+import { CODE, T } from "./tokens";
 
-// ── Aceternity / Vercel Code Theme Tokens ──────────
-const C = {
-  keyword: "#c678dd", // Pink/Purple (import, const, true/false)
-  function: "#61afef", // Blue (useState, names)
-  string: "#98c379", // Green (Strings)
-  number: "#d19a66", // Amber (Numbers)
-  punctuation: "#abb2bf", // Gray (Brackets, colons)
-  text: "#e4e4e7", // White/Off-white (Variables, generic text)
-  comment: "#5c6370", // Dim italic (Comments)
-  lineNumber: "#3f3f46", // Dark gray for the line numbers
-};
+// Syntax colours come from CSS variables (globals.css), so code follows the light/dark theme.
+const C = CODE;
 
 interface CodeRendererProps {
   content: string;
@@ -32,11 +24,11 @@ export default function CodeRenderer({
       key={index}
       style={{
         display: "flex",
-        minHeight: "24px",
-        lineHeight: "24px",
-        fontFamily: '"Geist Mono", monospace',
+        minHeight: "22px",
+        lineHeight: "22px",
+        fontFamily: T.mono,
         fontWeight: 400,
-        fontSize: "14px",
+        fontSize: "13px",
       }}
     >
       {/* Line Number */}
@@ -48,7 +40,7 @@ export default function CodeRenderer({
           paddingRight: "16px",
           color: C.lineNumber,
           userSelect: "none",
-          fontSize: "13px",
+          fontSize: "12px",
           boxSizing: "border-box",
         }}
       >

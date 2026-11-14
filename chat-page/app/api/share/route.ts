@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { auth, currentUser } from "@clerk/nextjs/server";
 import { db } from "@/lib/firebase-admin";
+import { isPlaceholderTitle, titleFromDescription } from "@/lib/session-title";
 import crypto from "crypto";
 
 export async function POST(req: Request) {
@@ -23,7 +24,12 @@ export async function POST(req: Request) {
     }
 
     const sessionData = sessionDoc.data() || {};
-    const title = sessionData.title || "Untitled Project";
+    // Same name the sidebar shows: the AI title, else the project idea, never a button label.
+    const title =
+      (!isPlaceholderTitle(sessionData.title) && sessionData.title) ||
+      titleFromDescription(sessionData.projectDescription) ||
+      sessionData.title ||
+      "Untitled Project";
     
     // Generate slug from title
     const slug = title

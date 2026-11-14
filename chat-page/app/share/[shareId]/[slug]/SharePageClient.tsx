@@ -1,23 +1,14 @@
 "use client";
 
 import React, { useEffect, useState } from "react";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useUser } from "@clerk/nextjs";
 import ChatPanel from "@/app/chat/components/ChatPanel";
-import { satoshi } from "@/constants";
+import { CircleAlert, Eye, GitFork, LoaderCircle } from "lucide-react";
+import { LogoMark } from "@/app/chat/components/Logo";
+import { Button, buttonClass } from "@/app/chat/components/ui";
 
-// ── Shared Minimal Design Tokens ──────────────────────────────────────
-const T = {
-  bg: "#09090b",
-  surface: "rgba(255, 255, 255, 0.02)",
-  surfaceHover: "rgba(255, 255, 255, 0.04)",
-  border: "rgba(255, 255, 255, 0.08)",
-  borderHover: "rgba(255, 255, 255, 0.15)",
-  text: "#ffffff",
-  textMuted: "#a1a1aa",
-  textHint: "#71717a",
-  font: "var(--font-inter), system-ui, -apple-system, sans-serif",
-};
 
 export default function SharePageClient({ shareId, slug }: { shareId: string; slug: string }) {
   const router = useRouter();
@@ -69,161 +60,68 @@ export default function SharePageClient({ shareId, slug }: { shareId: string; sl
 
   if (loading) {
     return (
-      <div className={satoshi.variable} style={{
-        display: "flex", alignItems: "center", justifyContent: "center",
-        flex: 1, height: "100vh", background: T.bg, color: T.textMuted,
-        fontFamily: T.font, fontSize: "14px", fontWeight: 500
-      }}>
-        <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
-          <div style={{ width: "16px", height: "16px", borderRadius: "50%", border: "2px solid rgba(255,255,255,0.1)", borderTopColor: "#fff", animation: "spin 1s linear infinite" }} />
-          Loading workspace...
-        </div>
-        <style dangerouslySetInnerHTML={{ __html: `@keyframes spin { to { transform: rotate(360deg); } }` }} />
+      <div className="flex h-dvh flex-1 items-center justify-center gap-3 bg-pm-shell text-sm font-medium text-pm-muted">
+        <LoaderCircle className="size-4 animate-spin" />
+        Loading shared project…
       </div>
     );
   }
-
   if (error || !data) {
     return (
-      <div className={satoshi.variable} style={{
-        display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center",
-        flex: 1, height: "100vh", background: T.bg, color: T.text, fontFamily: T.font, gap: "16px"
-      }}>
-        <div style={{ padding: "24px", background: "rgba(239, 68, 68, 0.1)", border: "1px solid rgba(239, 68, 68, 0.2)", borderRadius: "12px", textAlign: "center" }}>
-          <h2 style={{ fontSize: "18px", fontWeight: 600, color: "#f87171", margin: "0 0 8px 0" }}>Unavailable</h2>
-          <p style={{ color: "rgba(248, 113, 113, 0.8)", margin: 0, fontSize: "14px" }}>{error}</p>
+      <div className="flex h-dvh flex-1 flex-col items-center justify-center gap-4 bg-pm-shell p-6 text-pm-fg">
+        <div className="max-w-sm rounded-2xl border border-pm-line bg-pm-card p-6 text-center">
+          <span className="mx-auto grid size-10 place-items-center rounded-xl bg-pm-danger/10 text-pm-danger">
+            <CircleAlert className="size-5" />
+          </span>
+          <h2 className="mt-4 text-base font-semibold tracking-tight">This project isn&apos;t available</h2>
+          <p className="mt-1.5 text-sm text-pm-muted">{error}</p>
+          <Link href="/" className={buttonClass("outline", "sm", "mt-5")}>
+            Go to ProdMate
+          </Link>
         </div>
       </div>
     );
   }
-
   const { metadata } = data;
-
   return (
-    <div className={satoshi.variable} style={{
-      display: "flex", flexDirection: "column", flex: 1, height: "100vh",
-      background: T.bg, fontFamily: T.font, position: "relative"
-    }}>
-
-      {/* ── Ambient Background Glow ── */}
-      <div style={{
-        position: "absolute",
-        top: 0,
-        left: "50%",
-        transform: "translateX(-50%)",
-        width: "800px",
-        height: "300px",
-        background: "radial-gradient(ellipse at top, rgba(255,255,255,0.035) 0%, transparent 70%)",
-        pointerEvents: "none",
-        zIndex: 0
-      }} />
-
-      {/* Top Banner */}
-      <div style={{
-        padding: "16px 24px",
-        background: "rgba(9, 9, 11, 0.6)",
-        backdropFilter: "blur(16px)",
-        WebkitBackdropFilter: "blur(16px)",
-        borderBottom: `1px solid ${T.border}`,
-        display: "flex",
-        alignItems: "center",
-        justifyContent: "space-between",
-        flexShrink: 0,
-        position: "relative",
-        zIndex: 10
-      }}>
-
-        <div style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
-          <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
-            <span style={{
-              fontSize: "10px", fontWeight: 600, color: T.textHint,
-              textTransform: "uppercase", letterSpacing: "0.06em",
-              background: "rgba(255,255,255,0.05)", padding: "2px 8px", borderRadius: "100px",
-              border: `1px solid rgba(255,255,255,0.05)`
-            }}>
-              Read Only
-            </span>
-            <h1 style={{ fontSize: "16px", fontWeight: 500, color: T.text, margin: 0, letterSpacing: "-0.01em" }}>
-              {metadata.title || "Shared Workspace"}
-            </h1>
+    <div className="flex h-dvh flex-1 flex-col bg-pm-shell p-2 text-pm-fg">
+      <div className="flex min-h-0 flex-1 flex-col overflow-hidden rounded-2xl border border-pm-line bg-pm-card">
+        {/* Header */}
+        <header className="flex flex-wrap items-center justify-between gap-3 border-b border-pm-line px-4 py-3">
+          <div className="flex min-w-0 items-center gap-3">
+            <Link href="/" title="ProdMate" className="shrink-0 text-pm-fg">
+              <LogoMark className="size-7" />
+            </Link>
+            <div className="min-w-0">
+              <div className="flex items-center gap-2">
+                <h1 className="truncate text-[15px] font-semibold tracking-tight">{metadata.title || "Shared project"}</h1>
+                <span className="inline-flex shrink-0 items-center gap-1 rounded-full border border-pm-line bg-pm-shell px-2 py-0.5 text-[10.5px] font-medium text-pm-muted">
+                  <Eye className="size-3" />
+                  Read only
+                </span>
+              </div>
+              <div className="truncate text-xs text-pm-muted">
+                Shared by <span className="font-medium text-pm-fg/80">{metadata.ownerName}</span> · made with ProdMate
+              </div>
+            </div>
           </div>
-          <div style={{ display: "flex", alignItems: "center", gap: "8px", fontSize: "13px", color: T.textMuted }}>
-            <span>Shared by <strong style={{ color: "rgba(255,255,255,0.85)", fontWeight: 500 }}>{metadata.ownerName}</strong></span>
-            <span style={{ color: T.borderHover }}>|</span>
-            <span>Created with <strong style={{ color: "rgba(255,255,255,0.85)", fontWeight: 500 }}>ProdMate</strong></span>
-          </div>
-        </div>
-
-        <div>
           {isLoaded && isSignedIn ? (
-            <button
-              onClick={handleFork}
-              disabled={forking}
-              style={{
-                padding: "8px 16px",
-                background: T.text,
-                color: T.bg,
-                border: "none",
-                borderRadius: "8px",
-                fontSize: "13px",
-                fontWeight: 600,
-                cursor: forking ? "not-allowed" : "pointer",
-                opacity: forking ? 0.7 : 1,
-                transition: "all 0.2s ease",
-                fontFamily: T.font,
-                display: "flex",
-                alignItems: "center",
-                gap: "8px"
-              }}
-              onMouseEnter={e => !forking && (e.currentTarget.style.opacity = "0.85")}
-              onMouseLeave={e => !forking && (e.currentTarget.style.opacity = "1")}
-            >
-              {forking ? "Forking..." : (
-                <>
-                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                    <line x1="12" y1="5" x2="12" y2="19"></line>
-                    <line x1="5" y1="12" x2="19" y2="12"></line>
-                  </svg>
-                  Fork to Workspace
-                </>
-              )}
-            </button>
+            <Button variant="primary" size="sm" onClick={handleFork} disabled={forking}>
+              {forking ? <LoaderCircle className="animate-spin" /> : <GitFork />}
+              {forking ? "Forking…" : "Fork to my workspace"}
+            </Button>
           ) : (
-            <button
-              onClick={() => router.push("/login")}
-              style={{
-                padding: "8px 16px",
-                background: "transparent",
-                color: T.text,
-                border: `1px solid ${T.borderHover}`,
-                borderRadius: "8px",
-                fontSize: "13px",
-                fontWeight: 500,
-                cursor: "pointer",
-                fontFamily: T.font,
-                transition: "all 0.2s ease"
-              }}
-              onMouseEnter={e => { e.currentTarget.style.background = T.surfaceHover; e.currentTarget.style.borderColor = "rgba(255,255,255,0.3)"; }}
-              onMouseLeave={e => { e.currentTarget.style.background = "transparent"; e.currentTarget.style.borderColor = T.borderHover; }}
-            >
-              Sign in to Fork
-            </button>
+            <Button variant="outline" size="sm" onClick={() => router.push("/login")}>
+              Sign in to fork
+            </Button>
           )}
+        </header>
+
+        {/* Read-only conversation */}
+        <div className="relative flex min-h-0 flex-1 overflow-hidden">
+          <ChatPanel agentName="AI Architect" isSidebarOpen={false} onToggleSidebar={() => {}} isSharedView={true} sharedData={data} />
         </div>
-
       </div>
-
-      {/* Chat Panel Read Only View */}
-      <div style={{ display: "flex", flex: 1, overflow: "hidden", position: "relative", minHeight: 0, zIndex: 1 }}>
-        <ChatPanel
-          agentName="AI Architect"
-          isSidebarOpen={false}
-          onToggleSidebar={() => { }}
-          isSharedView={true}
-          sharedData={data}
-        />
-      </div>
-
     </div>
   );
 }

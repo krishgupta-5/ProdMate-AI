@@ -19,6 +19,8 @@ import { NextResponse } from 'next/server';
 import { auth } from '@clerk/nextjs/server';
 import { getFullUserData } from '@/lib/auth';
 import { createOrUpdateUser, db } from '@/lib/firebase-admin';
+import { cleanTitle, isPlaceholderTitle } from '@/lib/session-title';
+import { artifactLabel } from '@/lib/artifact-labels';
 import { getOrCreateQuota, deductTokens } from '@/lib/token-quota';
 
 // Pipeline imports
@@ -139,9 +141,16 @@ export async function POST(req: Request) {
     await firestoreService.saveUserMessage(sessionId, userId, prompt);
 
     // ── Session title (first message only) ───────────────────────────────────
+    // Generate the title once per session, from the project idea. Checking the stored title (not
+    // just "no artifacts yet") stops later clicks like "Generate final doc" from renaming the chat
+    // when the in-memory state was lost.
     let generatedTitle: string | undefined;
-    if (isFirstMessage) {
-      generatedTitle = await generateTitle(prompt, fallbackApiKey);
+    const storedSession = (await db.collection('sessions').doc(sessionId).get()).data();
+    const storedTitle = storedSession?.title as string | undefined;
+    const storedIdea = storedSession?.projectDescription as string | undefined;
+    if (isPlaceholderTitle(storedTitle) && (artifact === 'initial' || !!storedIdea)) {
+      const source = artifact === 'initial' ? prompt : (storedIdea as string);
+      generatedTitle = cleanTitle(await generateTitle(source, fallbackApiKey));
     }
 
     // ══════════════════════════════════════════════════════════════════════════
@@ -165,7 +174,7 @@ export async function POST(req: Request) {
       await firestoreService.saveAssistantMessage(
         sessionId,
         userId,
-        `Modified ${artifactType}`,
+        `Updated the ${artifactLabel(artifactType).toLowerCase()}.`,
         artifactType,
       );
       await firestoreService.saveSessionMetadata(sessionId, userId, {
@@ -291,7 +300,7 @@ export async function POST(req: Request) {
     await firestoreService.saveAssistantMessage(
       sessionId,
       userId,
-      `${artifactType} generated.`,
+      `${artifactLabel(artifactType)} is ready.`,
       artifactType,
     );
     if (artifactType === 'finalMarkdown') {

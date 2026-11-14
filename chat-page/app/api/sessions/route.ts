@@ -2,6 +2,8 @@ import { NextResponse } from "next/server";
 import { auth } from "@clerk/nextjs/server";
 import { db, createOrUpdateUser } from "@/lib/firebase-admin";
 import { getFullUserData } from "@/lib/auth";
+import { cleanTitle, isPlaceholderTitle, titleFromDescription } from "@/lib/session-title";
+import { generateTitle } from "@/lib/pipeline/ArtifactController";
 
 export const dynamic = "force-dynamic";
 
@@ -35,8 +37,23 @@ export async function GET(req: Request) {
         const sessionId = doc.id;
         const sessionData = doc.data();
 
-        // If we already have a stored title, skip the messages query entirely
-        if (sessionData.title) {
+        // If we already have a real title, skip the messages query entirely
+        // No real name yet (older chats, or ones renamed to a button label by an earlier bug):
+        // ask the AI for one from the project idea, once, and save it.
+        if (isPlaceholderTitle(sessionData.title) && sessionData.projectDescription && process.env.GROQ_API_KEY) {
+          try {
+            const named = cleanTitle(await generateTitle(sessionData.projectDescription, process.env.GROQ_API_KEY));
+            if (named && !isPlaceholderTitle(named)) {
+              await doc.ref.set({ title: named }, { merge: true });
+              sessionData.title = named;
+            }
+          } catch (e) {
+            console.error("Failed to name session", sessionId, e);
+          }
+        }
+
+        const fallbackTitle = titleFromDescription(sessionData.projectDescription);
+        if (sessionData.title && (!isPlaceholderTitle(sessionData.title) || !fallbackTitle)) {
           return {
             sessionId,
             updatedAt: sessionData.updatedAt?.toDate() || new Date(),
@@ -60,7 +77,8 @@ export async function GET(req: Request) {
             return tb - ta;
           });
 
-        const lastMessage = userMessages[0]?.content ?? null;
+        // Prefer the project idea (the first message) over whatever was typed last.
+        const lastMessage = fallbackTitle ?? titleFromDescription(userMessages[userMessages.length - 1]?.content) ?? null;
 
         return {
           sessionId,

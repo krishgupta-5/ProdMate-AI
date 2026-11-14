@@ -1,6 +1,8 @@
 "use client";
 
-import React, { useState } from "react";
+import React from "react";
+import { ArrowUp, LoaderCircle, Mic } from "lucide-react";
+import { cn } from "@/lib/cn";
 
 interface InputQuota {
   tokensUsed: number;
@@ -19,92 +21,9 @@ interface InputAreaProps {
   handleSend: () => void;
   isTyping: boolean;
   hasGeneratedConfig?: boolean;
+  /** "hero" is the large centred box on the home screen; "dock" sits at the bottom of a chat. */
+  variant?: "hero" | "dock";
 }
-
-// --- Helper Components for Encapsulated Hover States ---
-
-const IconButton = ({ children, title }: { children: React.ReactNode; title: string }) => {
-  const [isHovered, setIsHovered] = useState(false);
-
-  return (
-    <button
-      title={title}
-      onMouseEnter={() => setIsHovered(true)}
-      onMouseLeave={() => setIsHovered(false)}
-      style={{
-        display: "flex",
-        alignItems: "center",
-        justifyContent: "center",
-        width: "36px",
-        height: "36px",
-        borderRadius: "10px",
-        background: isHovered ? "rgba(255, 255, 255, 0.08)" : "transparent",
-        color: isHovered ? "#ffffff" : "#a1a1aa",
-        border: "1px solid transparent",
-        cursor: "pointer",
-        transition: "all 0.2s cubic-bezier(0.16, 1, 0.3, 1)",
-      }}
-    >
-      {children}
-    </button>
-  );
-};
-
-const SendButton = ({
-  onClick,
-  disabled,
-  isTyping,
-}: {
-  onClick: () => void;
-  disabled: boolean;
-  isTyping: boolean;
-}) => {
-  const [isHovered, setIsHovered] = useState(false);
-  const shouldAnimateLift = isHovered && !disabled;
-
-  return (
-    <button
-      onClick={onClick}
-      disabled={disabled || isTyping}
-      onMouseEnter={() => setIsHovered(true)}
-      onMouseLeave={() => setIsHovered(false)}
-      style={{
-        width: "40px",
-        height: "40px",
-        borderRadius: "12px",
-        background: disabled ? "rgba(255, 255, 255, 0.05)" : "#ffffff",
-        color: disabled ? "rgba(255, 255, 255, 0.3)" : "#000000",
-        border: "none",
-        display: "flex",
-        alignItems: "center",
-        justifyContent: "center",
-        cursor: disabled ? "not-allowed" : "pointer",
-        transform: shouldAnimateLift ? "scale(1.05)" : "scale(1)",
-        boxShadow: shouldAnimateLift
-          ? "0 4px 14px rgba(255, 255, 255, 0.25)"
-          : "none",
-        transition: "all 0.2s cubic-bezier(0.16, 1, 0.3, 1)",
-      }}
-    >
-      {isTyping ? (
-        <svg className="send-spinner" width="20" height="20" viewBox="0 0 24 24" fill="none">
-          <circle cx="12" cy="12" r="9" stroke="currentColor" strokeWidth="2.5" fill="none" opacity="0.3" />
-          <path d="M21 12a9 9 0 0 1-6.219 8.56" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" fill="none">
-            <animateTransform attributeName="transform" type="rotate" from="0 12 12" to="360 12 12" dur="0.8s" repeatCount="indefinite" />
-          </path>
-        </svg>
-      ) : (
-        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-          <line x1="12" y1="19" x2="12" y2="5" />
-          <polyline points="5 12 12 5 19 12" />
-        </svg>
-      )}
-    </button>
-  );
-};
-
-
-// --- Main Component ---
 
 export default function InputArea({
   input,
@@ -114,92 +33,98 @@ export default function InputArea({
   handleKeyDown,
   handleSend,
   isTyping,
-  hasGeneratedConfig
+  hasGeneratedConfig,
+  variant = "dock",
 }: InputAreaProps) {
-  const [isFocused, setIsFocused] = useState(false);
-  const [isHovered, setIsHovered] = useState(false);
+  const isHero = variant === "hero";
 
-  const onChangeWrapper = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
-    const target = e.target;
-    target.style.height = "0px";
-    target.style.height = `${Math.min(target.scrollHeight, 160)}px`;
-    handleInputChange(e);
-  };
+  // Grow with the prompt, like ChatGPT: one line when empty, taller as you type (or paste, or a
+  // prompt is filled in for you), shrinking back as you delete. Past the cap it scrolls inside.
+  const resize = React.useCallback(() => {
+    const t = textareaRef.current;
+    if (!t) return;
+    // Hero: leave room for the top bar, orb, greeting and disclaimer (~380px) so the centred
+    // column never runs off screen. Dock: up to a third of the window.
+    const cap = Math.round(
+      isHero
+        ? Math.max(120, Math.min(window.innerHeight - 380, 420))
+        : Math.max(96, Math.min(window.innerHeight * 0.35, 300)),
+    );
+    t.style.height = "auto";
+    const next = Math.min(t.scrollHeight, cap);
+    t.style.height = `${next}px`;
+    t.style.overflowY = t.scrollHeight > cap ? "auto" : "hidden";
+  }, [textareaRef, isHero]);
+
+  React.useLayoutEffect(() => {
+    resize();
+  }, [input, resize]);
+
+  React.useEffect(() => {
+    window.addEventListener("resize", resize);
+    return () => window.removeEventListener("resize", resize);
+  }, [resize]);
 
   const isSubmitDisabled = !input.trim() || tokenQuota?.exhausted || isTyping;
 
   return (
     <div
-      onMouseEnter={() => setIsHovered(true)}
-      onMouseLeave={() => setIsHovered(false)}
-      style={{
-        width: "100%",
-        // Premium Frosted Glass Container
-        background: isFocused ? "rgba(255, 255, 255, 0.04)" : isHovered ? "rgba(255, 255, 255, 0.03)" : "rgba(20, 20, 24, 0.5)",
-        backdropFilter: "blur(24px)",
-        WebkitBackdropFilter: "blur(24px)",
-        border: `1px solid ${isFocused
-            ? "rgba(255, 255, 255, 0.2)"
-            : isHovered
-              ? "rgba(255, 255, 255, 0.12)"
-              : "rgba(255, 255, 255, 0.06)"
-          }`,
-        borderRadius: "20px",
-        padding: "16px",
-        display: "flex",
-        flexDirection: "column",
-        gap: "12px",
-        boxShadow: isFocused
-          ? "0 8px 32px rgba(0, 0, 0, 0.4), inset 0 1px 0 rgba(255, 255, 255, 0.1)"
-          : "0 8px 24px rgba(0, 0, 0, 0.2), inset 0 1px 0 rgba(255, 255, 255, 0.02)",
-        transition: "all 0.3s cubic-bezier(0.16, 1, 0.3, 1)",
-      }}
+      className={cn(
+        "flex w-full flex-col gap-3 rounded-2xl border border-pm-line bg-pm-card p-3 transition-[border-color,box-shadow] duration-200",
+        "shadow-[0_1px_2px_rgba(0,0,0,0.04),0_12px_32px_-12px_rgba(0,0,0,0.12)]",
+        "focus-within:border-pm-primary/40 focus-within:shadow-[0_0_0_4px_color-mix(in_oklch,var(--pm-primary)_12%,transparent),0_12px_32px_-12px_rgba(0,0,0,0.12)]",
+        isHero && "p-4",
+      )}
+      onClick={() => textareaRef.current?.focus()}
     >
       <textarea
         ref={textareaRef}
         value={input}
-        onChange={onChangeWrapper}
+        onChange={handleInputChange}
         onKeyDown={handleKeyDown}
-        onFocus={() => setIsFocused(true)}
-        onBlur={() => setIsFocused(false)}
-        placeholder={hasGeneratedConfig ? "Ask anything about your project... (e.g., Write an email, Schedule a meeting)" : "Describe the software product you want to build..."}
+        placeholder={
+          tokenQuota?.exhausted
+            ? "You've used today's tokens. They reset soon."
+            : hasGeneratedConfig
+              ? "Ask about your project, write an email, schedule a meeting…"
+              : "Describe the product you want to build…"
+        }
         disabled={isTyping}
         rows={1}
-        style={{
-          width: "100%",
-          background: "transparent",
-          border: "none",
-          outline: "none",
-          color: "#ffffff",
-          fontSize: "15px",
-          fontFamily: "var(--font-satoshi), system-ui, sans-serif",
-          lineHeight: "1.6",
-          padding: "0 4px",
-          margin: "0",
-          resize: "none",
-          overflowY: "auto",
-          minHeight: "24px",
-          maxHeight: "160px",
-        }}
+        className={cn(
+          "block w-full resize-none overflow-hidden bg-transparent px-1 text-[15px] break-words [overflow-wrap:anywhere] leading-relaxed text-pm-fg outline-none placeholder:text-pm-muted disabled:opacity-60",
+          "min-h-6 transition-[height] duration-100 ease-out",
+        )}
       />
 
-      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", width: "100%" }}>
-        <div style={{ display: "flex", gap: "6px" }}>
-          <IconButton title="Voice input">
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-              <path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"></path>
-              <path d="M19 10v2a7 7 0 0 1-14 0v-2"></path>
-              <line x1="12" y1="19" x2="12" y2="23"></line>
-              <line x1="8" y1="23" x2="16" y2="23"></line>
-            </svg>
-          </IconButton>
-        </div>
+      <div className="flex items-center justify-between">
+        <button
+          type="button"
+          title="Voice input"
+          className="grid size-8 place-items-center rounded-lg text-pm-muted transition-colors hover:bg-pm-shell hover:text-pm-fg"
+          onClick={(e) => e.stopPropagation()}
+        >
+          <Mic className="size-4" />
+        </button>
 
-        <SendButton
-          onClick={() => handleSend()}
+        <button
+          type="button"
+          onClick={(e) => {
+            e.stopPropagation();
+            handleSend();
+          }}
           disabled={Boolean(isSubmitDisabled)}
-          isTyping={isTyping}
-        />
+          title="Send"
+          aria-label="Send message"
+          className={cn(
+            "grid size-9 place-items-center rounded-xl transition-[background-color,color,transform] duration-200 active:scale-95",
+            isSubmitDisabled && !isTyping
+              ? "cursor-not-allowed bg-pm-shell text-pm-muted"
+              : "bg-pm-primary text-white hover:bg-pm-primary/85",
+          )}
+        >
+          {isTyping ? <LoaderCircle className="size-4 animate-spin" /> : <ArrowUp className="size-4" strokeWidth={2.5} />}
+        </button>
       </div>
     </div>
   );

@@ -1,28 +1,18 @@
 "use client";
 
-import React from "react";
+import React, { useState } from "react";
+import { Check, ChevronDown, Copy } from "lucide-react";
 import CodeRenderer from "@/app/chat/components/CodeRenderer";
 import MarkdownRenderer from "@/app/chat/components/MarkdownRenderer";
+import { cn } from "@/lib/cn";
 
-// ── ProdMate Design Tokens (ProdMate Minimal Palette) ──────────
-const T = {
-  bg: "#09090b",
-  codeBg: "#050505",
-  surface: "#121214",
-  border: "#27272a",
-  text: "#ededed",
-  textMuted: "#a1a1aa",
-  textHint: "#71717a",
-  font: "var(--font-satoshi), system-ui, -apple-system, sans-serif",
-  mono: '"Geist Mono", ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace',
-};
-
+// HTTP method colours (theme-aware status tokens from globals.css).
 const methodColors: Record<string, string> = {
-  GET: "#34D399",    // Emerald
-  POST: "#61afef",   // Blue
-  PUT: "#FBBF24",    // Amber
-  PATCH: "#c678dd",  // Purple/Pink
-  DELETE: "#F87171", // Red
+  GET: "var(--pm-green)",
+  POST: "var(--pm-blue)",
+  PUT: "var(--pm-amber)",
+  PATCH: "var(--pm-violet)",
+  DELETE: "var(--pm-red)",
 };
 
 interface ApiDesignViewerProps {
@@ -211,9 +201,7 @@ export default function ApiDesignViewer({ content }: ApiDesignViewerProps) {
   if (groups.length === 0 && !overview) {
     // We still want to render whatever they generated as markdown, so tables and mermaid diagrams work!
     return (
-      <div style={{ padding: "0" }}>
-        <MarkdownRenderer content={content} />
-      </div>
+      <MarkdownRenderer content={content} />
     );
   }
 
@@ -258,147 +246,228 @@ export default function ApiDesignViewer({ content }: ApiDesignViewerProps) {
   };
 
   const relTypeColors: Record<string, string> = {
-    "one-to-many": "#3B82F6",
-    "one-to-one": "#10B981",
-    "many-to-many": "#F59E0B",
-    "relates-to": "#71717A",
+    "one-to-many": "var(--pm-blue)",
+    "one-to-one": "var(--pm-green)",
+    "many-to-many": "var(--pm-amber)",
+    "relates-to": "var(--pm-muted)",
   };
 
-  return (
-    <div style={{ fontFamily: T.font, color: T.text, padding: "0" }}>
+  return <ApiDesignBody overview={cleanOverview} relationships={relationships} groups={groups} relTypeColors={relTypeColors} decodeArrow={decodeArrow} />;
+}
 
-      {/* Overview Markdown (non-erDiagram parts) */}
-      {cleanOverview && (
-        <div style={{ marginBottom: (relationships.length > 0 || groups.length > 0) ? "24px" : "0" }}>
-          <MarkdownRenderer content={cleanOverview} />
+// ─────────────────────────────────────────────────────────────────────────────
+// Presentation
+// ─────────────────────────────────────────────────────────────────────────────
+
+type Route = { method: string; path: string; description: string; request_body?: string; response?: string };
+type Group = {
+  group: string;
+  description?: string;
+  routes: Route[];
+  groupRequestModels?: string;
+  groupResponseModels?: string;
+};
+
+const METHODS = ["GET", "POST", "PUT", "PATCH", "DELETE"] as const;
+
+function MethodBadge({ method, className }: { method: string; className?: string }) {
+  const m = method.toUpperCase();
+  const color = methodColors[m] || "var(--pm-muted)";
+  return (
+    <span
+      className={cn("inline-flex h-5 w-14 shrink-0 items-center justify-center rounded-md font-mono text-[10.5px] font-semibold tracking-wide", className)}
+      style={{ color, background: `color-mix(in oklch, ${color} 13%, transparent)` }}
+    >
+      {m}
+    </span>
+  );
+}
+
+function hasModel(v?: string) {
+  return !!v && v !== "none" && v !== '"none"';
+}
+
+function RouteRow({ r }: { r: Route }) {
+  const expandable = hasModel(r.request_body) || hasModel(r.response);
+  const [open, setOpen] = useState(false);
+  const [copied, setCopied] = useState(false);
+
+  return (
+    <div className="overflow-hidden rounded-xl border border-pm-line bg-pm-card transition-colors hover:border-pm-line-strong">
+      <div
+        className={cn("group flex items-center gap-3 px-3 py-2", expandable && "cursor-pointer")}
+        onClick={() => expandable && setOpen((o) => !o)}
+      >
+        <MethodBadge method={r.method} />
+        <code className="min-w-0 truncate font-mono text-[13px] font-medium text-pm-fg">{r.path}</code>
+        <button
+          type="button"
+          title={copied ? "Copied" : "Copy path"}
+          onClick={(e) => {
+            e.stopPropagation();
+            navigator.clipboard?.writeText(r.path);
+            setCopied(true);
+            setTimeout(() => setCopied(false), 1200);
+          }}
+          className="grid size-6 shrink-0 place-items-center rounded-md text-pm-muted opacity-0 transition-opacity group-hover:opacity-100 hover:bg-pm-shell hover:text-pm-fg"
+        >
+          {copied ? <Check className="size-3 text-pm-green" /> : <Copy className="size-3" />}
+        </button>
+        <span className="ml-auto hidden min-w-0 truncate text-xs text-pm-muted sm:block sm:max-w-[45%]">{r.description}</span>
+        {expandable && <ChevronDown className={cn("size-3.5 shrink-0 text-pm-muted transition-transform", open && "rotate-180")} />}
+      </div>
+      {r.description && <div className="px-3 pb-2 text-xs text-pm-muted sm:hidden">{r.description}</div>}
+
+      {expandable && open && (
+        <div className="grid gap-3 border-t border-pm-line bg-pm-shell/40 p-3 lg:grid-cols-2">
+          {hasModel(r.request_body) && (
+            <div>
+              <div className="mb-1.5 text-[10.5px] font-semibold tracking-wider text-pm-muted uppercase">Request body</div>
+              <div className="overflow-x-auto rounded-lg border border-pm-line bg-pm-code py-1.5">
+                <CodeRenderer content={r.request_body!} language="json" />
+              </div>
+            </div>
+          )}
+          {hasModel(r.response) && (
+            <div>
+              <div className="mb-1.5 text-[10.5px] font-semibold tracking-wider text-pm-muted uppercase">Response</div>
+              <div className="overflow-x-auto rounded-lg border border-pm-line bg-pm-code py-1.5">
+                <CodeRenderer content={r.response!} language="json" />
+              </div>
+            </div>
+          )}
+        </div>
+      )}
+    </div>
+  );
+}
+
+function ApiDesignBody({
+  overview,
+  relationships,
+  groups,
+  relTypeColors,
+  decodeArrow,
+}: {
+  overview: string;
+  relationships: Array<{ left: string; right: string; label: string; arrow: string }>;
+  groups: Group[];
+  relTypeColors: Record<string, string>;
+  decodeArrow: (arrow: string) => string;
+}) {
+  const [filter, setFilter] = useState<string | null>(null);
+  const allRoutes = groups.flatMap((g) => g.routes);
+  const counts = METHODS.map((m) => [m, allRoutes.filter((r) => r.method.toUpperCase() === m).length] as const).filter(
+    ([, n]) => n > 0,
+  );
+
+  return (
+    <div className="flex flex-col gap-6">
+      {overview && <MarkdownRenderer content={overview} />}
+
+      {/* Summary + method filter */}
+      {allRoutes.length > 0 && (
+        <div className="flex flex-wrap items-center gap-2 rounded-xl border border-pm-line bg-pm-shell/50 p-2.5">
+          <span className="px-1.5 text-sm text-pm-muted">
+            <span className="font-semibold text-pm-fg tabular-nums">{allRoutes.length}</span> endpoints in{" "}
+            <span className="font-semibold text-pm-fg tabular-nums">{groups.length}</span> resources
+          </span>
+          <div className="ml-auto flex flex-wrap gap-1">
+            <button
+              type="button"
+              onClick={() => setFilter(null)}
+              className={cn(
+                "h-7 rounded-lg px-2.5 text-xs font-medium transition-colors",
+                !filter ? "bg-pm-card text-pm-fg shadow-[0_0_0_1px_var(--pm-line)]" : "text-pm-muted hover:text-pm-fg",
+              )}
+            >
+              All
+            </button>
+            {counts.map(([m, n]) => (
+              <button
+                key={m}
+                type="button"
+                onClick={() => setFilter(filter === m ? null : m)}
+                className={cn(
+                  "flex h-7 items-center gap-1.5 rounded-lg px-2 text-xs font-medium transition-colors",
+                  filter === m ? "bg-pm-card text-pm-fg shadow-[0_0_0_1px_var(--pm-line)]" : "text-pm-muted hover:text-pm-fg",
+                )}
+              >
+                <span className="font-mono text-[10.5px] font-semibold" style={{ color: methodColors[m] }}>
+                  {m}
+                </span>
+                <span className="tabular-nums">{n}</span>
+              </button>
+            ))}
+          </div>
         </div>
       )}
 
-      {/* ── ER Relationships Card ── */}
+      {/* Entity relationships */}
       {relationships.length > 0 && (
-        <div style={{ marginBottom: groups.length > 0 ? "24px" : "0" }}>
-          <h3 style={{ fontSize: "13px", fontWeight: 600, color: T.textMuted, margin: "0 0 12px 0", textTransform: "uppercase", letterSpacing: "0.06em" }}>
-            Entity Relationships
-          </h3>
-          <div style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
+        <section>
+          <h3 className="mb-2.5 text-[11px] font-semibold tracking-wider text-pm-muted uppercase">Entity relationships</h3>
+          <div className="grid gap-2 md:grid-cols-2">
             {relationships.map((rel, i) => {
               const type = decodeArrow(rel.arrow);
-              const color = relTypeColors[type] || "#71717A";
+              const color = relTypeColors[type] || "var(--pm-muted)";
               return (
-                <div key={i} style={{
-                  display: "flex", alignItems: "center", gap: "12px",
-                  padding: "8px 14px", background: T.surface,
-                  border: `1px solid ${T.border}`, borderRadius: "6px",
-                  borderLeft: `3px solid ${color}`,
-                }}>
-                  <span style={{ fontSize: "13px", fontWeight: 600, color: T.text, fontFamily: T.mono, minWidth: "100px" }}>
-                    {rel.left}
-                  </span>
-                  <span style={{
-                    fontSize: "10px", fontWeight: 600, color, background: `${color}15`,
-                    padding: "2px 8px", borderRadius: "4px", textTransform: "uppercase",
-                    letterSpacing: "0.5px", fontFamily: T.mono, whiteSpace: "nowrap",
-                  }}>
+                <div key={i} className="flex items-center gap-2.5 rounded-xl border border-pm-line bg-pm-card px-3 py-2">
+                  <code className="truncate font-mono text-[12.5px] font-semibold text-pm-fg">{rel.left}</code>
+                  <span
+                    className="shrink-0 rounded-full px-2 py-0.5 text-[10px] font-semibold tracking-wide uppercase"
+                    style={{ color, background: `color-mix(in oklch, ${color} 13%, transparent)` }}
+                  >
                     {type}
                   </span>
-                  <span style={{ fontSize: "13px", fontWeight: 600, color: T.text, fontFamily: T.mono, minWidth: "100px" }}>
-                    {rel.right}
-                  </span>
-                  <span style={{ fontSize: "12px", color: T.textHint, marginLeft: "auto", fontStyle: "italic" }}>
-                    {rel.label}
-                  </span>
+                  <code className="truncate font-mono text-[12.5px] font-semibold text-pm-fg">{rel.right}</code>
+                  <span className="ml-auto truncate text-xs text-pm-muted italic">{rel.label}</span>
                 </div>
               );
             })}
           </div>
-        </div>
+        </section>
       )}
 
-      {/* Resource Groups (Tightened gaps) */}
-      <div style={{ display: "flex", flexDirection: "column", gap: "24px" }}>
-        {groups.map((g, gi) => (
-          <div key={gi} style={{ borderTop: overview || gi > 0 ? `1px solid ${T.border}` : "none", paddingTop: overview || gi > 0 ? "20px" : "0px" }}>
+      {/* Resource groups */}
+      {groups.map((g, gi) => {
+        const routes = filter ? g.routes.filter((r) => r.method.toUpperCase() === filter) : g.routes;
+        if (filter && routes.length === 0) return null;
+        return (
+          <section key={gi}>
+            <div className="mb-3 flex items-baseline justify-between gap-3">
+              <h3 className="text-[15px] font-semibold tracking-tight text-pm-fg capitalize">{g.group}</h3>
+              <span className="text-xs text-pm-muted tabular-nums">
+                {routes.length} {routes.length === 1 ? "endpoint" : "endpoints"}
+              </span>
+            </div>
+            {g.description && <p className="-mt-1.5 mb-3 text-[13px] leading-relaxed text-pm-muted">{g.description}</p>}
 
-            {/* Group Header */}
-            <h2 style={{ fontSize: "18px", fontWeight: 500, color: T.text, margin: "0 0 12px 0", textTransform: "capitalize", letterSpacing: "-0.01em" }}>
-              {g.group}
-            </h2>
-
-            {/* Group Description */}
-            {g.description && (
-              <p style={{ fontSize: "14px", color: T.textMuted, margin: "0 0 16px 0", lineHeight: "1.5" }}>
-                {g.description}
-              </p>
-            )}
-
-            {/* Endpoints List (Compressed) */}
-            <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
-              {g.routes.map((r, ri) => (
-                <div key={ri} style={{ display: "flex", flexDirection: "column", background: T.surface, border: `1px solid ${T.border}`, borderRadius: "6px", overflow: "hidden" }}>
-
-                  {/* Route Header Row */}
-                  <div style={{ display: "flex", alignItems: "center", gap: "12px", padding: "8px 12px", borderBottom: (r.request_body && r.request_body !== "none" || r.response) ? `1px solid ${T.border}` : "none" }}>
-                    <span style={{ color: methodColors[r.method.toUpperCase()] || T.textMuted, background: `${methodColors[r.method.toUpperCase()] || T.textMuted}15`, padding: "2px 0", width: "56px", textAlign: "center", borderRadius: "4px", fontFamily: T.mono, fontSize: "11px", fontWeight: 600, letterSpacing: "0.5px" }}>
-                      {r.method.toUpperCase()}
-                    </span>
-                    <span style={{ fontSize: "13px", fontWeight: 500, color: T.text, fontFamily: T.mono }}>
-                      {r.path}
-                    </span>
-                    <span style={{ color: T.textMuted, fontSize: "12px", marginLeft: "auto", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", maxWidth: "40%" }}>
-                      {r.description}
-                    </span>
-                  </div>
-
-                  {/* Route-level Models (Legacy YAML Format - Compressed) */}
-                  {(r.request_body || r.response) && (
-                    <div style={{ display: "flex", flexDirection: "column", gap: "12px", padding: "12px" }}>
-                      {r.request_body && r.request_body !== "none" && r.request_body !== '"none"' && (
-                        <div style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
-                          <span style={{ fontSize: "10px", color: T.textHint, fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.5px" }}>Request Body</span>
-                          <div style={{ margin: 0, padding: "8px 12px", background: T.codeBg, border: `1px solid ${T.border}`, borderRadius: "4px", fontSize: "12px", fontFamily: T.mono, overflowX: "auto" }}>
-                            <CodeRenderer content={r.request_body} language="json" />
-                          </div>
-                        </div>
-                      )}
-                      {r.response && (
-                        <div style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
-                          <span style={{ fontSize: "10px", color: T.textHint, fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.5px" }}>Response</span>
-                          <div style={{ margin: 0, padding: "8px 12px", background: T.codeBg, border: `1px solid ${T.border}`, borderRadius: "4px", fontSize: "12px", fontFamily: T.mono, overflowX: "auto" }}>
-                            <CodeRenderer content={r.response} language="json" />
-                          </div>
-                        </div>
-                      )}
-                    </div>
-                  )}
-                </div>
+            <div className="flex flex-col gap-1.5">
+              {routes.map((r, ri) => (
+                <RouteRow key={ri} r={r} />
               ))}
             </div>
 
-            {/* Group-level Models (New Markdown Format - Compressed) */}
             {(g.groupRequestModels || g.groupResponseModels) && (
-              <div style={{ display: "flex", flexDirection: "column", gap: "16px", marginTop: "16px" }}>
+              <div className="mt-3 grid gap-3 lg:grid-cols-2">
                 {g.groupRequestModels && (
-                  <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
-                    <h4 style={{ margin: 0, fontSize: "13px", color: T.text, fontWeight: 500 }}>Request Models</h4>
-                    <div style={{ background: T.surface, border: `1px solid ${T.border}`, borderRadius: "6px", padding: "0 12px", fontSize: "13px" }}>
-                      <MarkdownRenderer content={g.groupRequestModels} />
-                    </div>
+                  <div className="rounded-xl border border-pm-line bg-pm-shell/40 p-3.5">
+                    <div className="mb-2 text-[10.5px] font-semibold tracking-wider text-pm-muted uppercase">Request models</div>
+                    <MarkdownRenderer content={g.groupRequestModels} />
                   </div>
                 )}
                 {g.groupResponseModels && (
-                  <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
-                    <h4 style={{ margin: 0, fontSize: "13px", color: T.text, fontWeight: 500 }}>Response Models</h4>
-                    <div style={{ background: T.surface, border: `1px solid ${T.border}`, borderRadius: "6px", padding: "0 12px", fontSize: "13px" }}>
-                      <MarkdownRenderer content={g.groupResponseModels} />
-                    </div>
+                  <div className="rounded-xl border border-pm-line bg-pm-shell/40 p-3.5">
+                    <div className="mb-2 text-[10.5px] font-semibold tracking-wider text-pm-muted uppercase">Response models</div>
+                    <MarkdownRenderer content={g.groupResponseModels} />
                   </div>
                 )}
               </div>
             )}
-
-          </div>
-        ))}
-      </div>
+          </section>
+        );
+      })}
     </div>
   );
 }

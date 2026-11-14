@@ -1,116 +1,97 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
-import Sidebar from "../chat/components/Sidebar";
-import LoginModal from "../chat/components/LoginModal";
+import { useUser } from "@clerk/nextjs";
+import { ArrowLeft, ChevronDown, CircleAlert, Plug, RefreshCw, TriangleAlert, X } from "lucide-react";
+import AppShell, { BackButton, Crumb, PageHeading, TopBar } from "../chat/components/AppShell";
+import { Button, Card, IconButton, Modal } from "../chat/components/ui";
+import { cn } from "@/lib/cn";
+import { useSmoothScroll } from "@/lib/use-smooth-scroll";
 
-// ── Shared Minimal Design Tokens ──────────────────────────────────────
-const T = {
-  bg: "#09090b",
-  surface: "rgba(255, 255, 255, 0.02)",
-  surfaceHover: "rgba(255, 255, 255, 0.04)",
-  border: "rgba(255, 255, 255, 0.08)",
-  borderHover: "rgba(255, 255, 255, 0.15)",
-  text: "#ffffff",
-  textMuted: "#a1a1aa",
-  textHint: "#71717a",
-  font: "var(--font-inter), system-ui, -apple-system, sans-serif",
-};
+const LOGO_DEV_PUBLIC_KEY = process.env.NEXT_PUBLIC_LOGO_DEV_KEY || "pk_dNdWcUuQT6e3A-6SxXGIYw";
 
-const LOGO_DEV_PUBLIC_KEY = process.env.NEXT_PUBLIC_LOGO_DEV_KEY || 'pk_dNdWcUuQT6e3A-6SxXGIYw';
-
-function CompanyLogo({ domain, grayscale, logoUrl }: { domain: string, grayscale?: boolean, logoUrl?: string }) {
+function CompanyLogo({ domain, dimmed, logoUrl }: { domain: string; dimmed?: boolean; logoUrl?: string }) {
   return (
-    <div style={{
-      width: "56px",
-      height: "56px",
-      background: "transparent",
-      display: "flex",
-      alignItems: "center",
-      justifyContent: "center",
-      filter: grayscale ? "grayscale(100%) opacity(0.4)" : "none",
-      transition: "filter 0.3s ease",
-      flexShrink: 0
-    }}>
+    <div
+      className={cn(
+        "grid size-12 shrink-0 place-items-center rounded-xl border border-pm-line bg-white p-2 transition-[filter,opacity] duration-300",
+        dimmed && "opacity-60 grayscale",
+      )}
+    >
       <Image
         src={logoUrl || `https://img.logo.dev/${domain}?token=${LOGO_DEV_PUBLIC_KEY}`}
         alt={`${domain} logo`}
-        width={52}
-        height={52}
-        style={{ objectFit: "contain" }}
+        width={32}
+        height={32}
+        className="object-contain"
       />
     </div>
   );
 }
 
-// ─── Custom Select Component to Fix Native Dropdown ─────────────────────────
+// ─── Dropdown (a styled replacement for the native <select>) ─────────────────
 
-function CustomSelect({ value, options, onChange, disabled, placeholder, width = "100%" }: any) {
+function CustomSelect({
+  value,
+  options,
+  onChange,
+  disabled,
+  placeholder,
+}: {
+  value: string;
+  options: { label: string; value: string }[];
+  onChange: (v: string) => void;
+  disabled?: boolean;
+  placeholder?: string;
+}) {
   const [isOpen, setIsOpen] = useState(false);
 
   useEffect(() => {
     const close = () => setIsOpen(false);
-    if (isOpen) {
-      window.addEventListener("click", close);
-    }
+    if (isOpen) window.addEventListener("click", close);
     return () => window.removeEventListener("click", close);
   }, [isOpen]);
 
-  const selectedOption = options?.find((o: any) => o.value === value);
+  const selected = options.find((o) => o.value === value);
 
   return (
-    <div style={{ position: "relative", width }} onClick={(e) => e.stopPropagation()}>
-      <div
-        onClick={() => !disabled && setIsOpen(!isOpen)}
-        style={{
-          background: T.surfaceHover,
-          border: `1px solid ${isOpen ? "rgba(255,255,255,0.15)" : T.borderHover}`,
-          color: selectedOption ? T.text : T.textHint,
-          padding: "8px 32px 8px 12px",
-          borderRadius: "8px",
-          fontSize: "13px",
-          fontFamily: T.font,
-          cursor: disabled ? "not-allowed" : "pointer",
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "space-between",
-          transition: "all 0.2s ease"
-        }}
+    <div className="relative w-48" onClick={(e) => e.stopPropagation()}>
+      <button
+        type="button"
+        disabled={disabled}
+        onClick={() => setIsOpen((o) => !o)}
+        className={cn(
+          "flex h-9 w-full items-center justify-between gap-2 rounded-lg border bg-pm-card px-3 text-[13px] transition-colors disabled:cursor-not-allowed disabled:opacity-60",
+          isOpen ? "border-pm-primary/50" : "border-pm-line hover:border-pm-line-strong",
+          selected ? "text-pm-fg" : "text-pm-muted",
+        )}
       >
-        <span style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
-          {selectedOption ? selectedOption.label : placeholder}
-        </span>
-        <svg style={{ position: "absolute", right: "12px", transform: isOpen ? "rotate(180deg)" : "rotate(0deg)", transition: "transform 0.2s ease" }} width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#a1a1aa" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-          <polyline points="6 9 12 15 18 9"></polyline>
-        </svg>
-      </div>
+        <span className="truncate">{selected ? selected.label : placeholder}</span>
+        <ChevronDown className={cn("size-3.5 shrink-0 text-pm-muted transition-transform", isOpen && "rotate-180")} />
+      </button>
 
       {isOpen && (
-        <div style={{
-          position: "absolute", top: "100%", left: 0, right: 0, marginTop: "4px",
-          background: "#18181b", border: `1px solid ${T.borderHover}`, borderRadius: "8px",
-          padding: "4px", zIndex: 50, maxHeight: "200px", overflowY: "auto",
-          boxShadow: "0 8px 24px rgba(0,0,0,0.5)"
-        }}>
-          {options?.length === 0 ? (
-            <div style={{ padding: "8px 12px", fontSize: "13px", color: T.textMuted }}>No options available</div>
+        <div className="absolute inset-x-0 top-full z-50 mt-1 max-h-52 overflow-y-auto rounded-xl border border-pm-line bg-pm-card p-1 shadow-[0_12px_32px_-8px_rgba(0,0,0,0.18)]">
+          {options.length === 0 ? (
+            <div className="px-3 py-2 text-[13px] text-pm-muted">No options available</div>
           ) : (
-            options?.map((opt: any) => (
-              <div
+            options.map((opt) => (
+              <button
                 key={opt.value}
-                onClick={() => { onChange(opt.value); setIsOpen(false); }}
-                style={{
-                  padding: "8px 12px", fontSize: "13px", color: opt.value === value ? "#ffffff" : "#a1a1aa",
-                  background: opt.value === value ? "rgba(255,255,255,0.1)" : "transparent",
-                  borderRadius: "4px", cursor: "pointer", transition: "all 0.2s ease"
+                type="button"
+                onClick={() => {
+                  onChange(opt.value);
+                  setIsOpen(false);
                 }}
-                onMouseEnter={(e) => { if (opt.value !== value) { e.currentTarget.style.background = "rgba(255,255,255,0.05)"; e.currentTarget.style.color = "#ffffff"; } }}
-                onMouseLeave={(e) => { if (opt.value !== value) { e.currentTarget.style.background = "transparent"; e.currentTarget.style.color = "#a1a1aa"; } }}
+                className={cn(
+                  "flex w-full rounded-md px-3 py-2 text-left text-[13px] transition-colors",
+                  opt.value === value ? "bg-pm-shell font-medium text-pm-fg" : "text-pm-fg/75 hover:bg-pm-shell hover:text-pm-fg",
+                )}
               >
                 {opt.label}
-              </div>
+              </button>
             ))
           )}
         </div>
@@ -119,7 +100,7 @@ function CustomSelect({ value, options, onChange, disabled, placeholder, width =
   );
 }
 
-// ─── Component Data ─────────────────────────────────────────────────────────
+// ─── Data ────────────────────────────────────────────────────────────────────
 
 type Category = "All" | "Workspace" | "Development" | "Project Management" | "Productivity" | "Communication" | "Automation";
 
@@ -138,7 +119,7 @@ const INTEGRATIONS: Integration[] = [
     id: "notion",
     name: "Notion",
     category: "Workspace",
-    description: "Export your PRDs, User Stories, and Architecture specs directly to your Notion workspace.",
+    description: "Export your PRDs, user stories and architecture specs straight to your Notion workspace.",
     domain: "notion.so",
     connected: false,
   },
@@ -146,7 +127,7 @@ const INTEGRATIONS: Integration[] = [
     id: "github",
     name: "GitHub",
     category: "Development",
-    description: "Link commits, pull requests, and issues directly to your planning documents.",
+    description: "Create a repository from your plan, with the folder structure and docs in place.",
     domain: "github.com",
     connected: false,
   },
@@ -154,7 +135,7 @@ const INTEGRATIONS: Integration[] = [
     id: "jira",
     name: "Jira",
     category: "Project Management",
-    description: "Automatically create and update Jira tickets from generated user stories.",
+    description: "Turn generated user stories into Jira tickets automatically.",
     domain: "jira.com",
     connected: false,
   },
@@ -162,7 +143,7 @@ const INTEGRATIONS: Integration[] = [
     id: "calendar",
     name: "Google Calendar",
     category: "Automation",
-    description: "Sync project milestones and automatically schedule review meetings.",
+    description: "Schedule review meetings and project milestones from the chat.",
     domain: "calendar.google.com",
     connected: false,
     logoUrl: "https://cloud.gmelius.com/public/logos/google/Google_Calendar_Logo_512px.png",
@@ -171,141 +152,142 @@ const INTEGRATIONS: Integration[] = [
     id: "gmail",
     name: "Gmail",
     category: "Automation",
-    description: "Automate email updates and summaries to stakeholders on project progress.",
+    description: "Draft and send project updates to stakeholders from the chat.",
     domain: "gmail.com",
     connected: false,
     logoUrl: "/Gmail_Logo_512px.png",
-  }
+  },
 ];
 
-const CATEGORIES: Category[] = ["All", "Workspace", "Development", "Project Management", "Productivity", "Communication", "Automation"];
+const CATEGORIES: Category[] = ["All", "Workspace", "Development", "Project Management", "Automation"];
+const OAUTH_IDS = ["notion", "github", "jira", "calendar", "gmail"];
 
-// ─── Child Components ───────────────────────────────────────────────────────
+const SETTINGS_TITLE: Record<string, string> = {
+  notion: "Notion settings",
+  github: "GitHub settings",
+  jira: "Jira settings",
+  calendar: "Google Calendar settings",
+  gmail: "Gmail settings",
+};
+
+// ─── Card ────────────────────────────────────────────────────────────────────
+
+function Switch({ on, onClick, label }: { on: boolean; onClick: (e: React.MouseEvent) => void; label: string }) {
+  return (
+    <button
+      type="button"
+      role="switch"
+      aria-checked={on}
+      aria-label={label}
+      onClick={onClick}
+      className={cn("relative h-5 w-9 shrink-0 rounded-full transition-colors", on ? "bg-pm-primary" : "bg-pm-line-strong")}
+    >
+      <span
+        className={cn(
+          "absolute top-0.5 left-0.5 size-4 rounded-full bg-white shadow-sm transition-transform duration-300 ease-[var(--ease-pm)]",
+          on && "translate-x-4",
+        )}
+      />
+    </button>
+  );
+}
 
 function IntegrationCard({
   integration,
   onConnect,
   onConfigure,
-  onToggleActive
+  onToggleActive,
 }: {
-  integration: Integration,
-  onConnect?: (e: React.MouseEvent) => void,
-  onConfigure?: (e: React.MouseEvent) => void,
-  onToggleActive?: (id: string, e: React.MouseEvent) => void
+  integration: Integration;
+  onConnect?: (e: React.MouseEvent) => void;
+  onConfigure?: (e: React.MouseEvent) => void;
+  onToggleActive?: (id: string, e: React.MouseEvent) => void;
 }) {
-  const [hover, setHover] = useState(false);
+  const act = (e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    if (integration.connected && onConfigure) onConfigure(e);
+    else if (!integration.connected && onConnect) onConnect(e);
+    else if (onToggleActive) onToggleActive(integration.id, e);
+  };
 
   return (
-    <div
-      onMouseEnter={() => setHover(true)}
-      onMouseLeave={() => setHover(false)}
-      style={{
-        display: "flex",
-        flexDirection: "column",
-        background: hover ? T.surfaceHover : T.surface,
-        border: `1px solid ${hover ? T.borderHover : T.border}`,
-        borderRadius: "16px",
-        padding: "24px",
-        transition: "all 0.3s cubic-bezier(0.16, 1, 0.3, 1)",
-        boxShadow: hover ? "0 8px 32px rgba(0,0,0,0.2)" : "none",
-      }}
-    >
-      <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", marginBottom: "20px" }}>
-        {/* Brand Icon Container */}
-        <CompanyLogo domain={integration.domain} grayscale={!integration.connected} logoUrl={integration.logoUrl} />
-
-        {/* Status Badge */}
-        <div style={{
-          padding: "4px 10px", borderRadius: "6px", fontSize: "10px", fontWeight: 600,
-          textTransform: "uppercase", letterSpacing: "0.05em", transition: "all 0.3s ease",
-          background: integration.connected ? "rgba(16, 185, 129, 0.1)" : "rgba(255,255,255,0.03)",
-          color: integration.connected ? "#34d399" : T.textHint,
-          border: `1px solid ${integration.connected ? "rgba(16, 185, 129, 0.2)" : T.border}`,
-        }}>
-          {integration.connected ? "Connected" : "Inactive"}
-        </div>
-      </div>
-
-      <div style={{ flex: 1, marginBottom: "24px" }}>
-        <h3 style={{ fontSize: "16px", fontWeight: 600, color: T.text, margin: "0 0 8px 0", letterSpacing: "-0.01em" }}>
-          {integration.name}
-        </h3>
-        <p style={{ fontSize: "14px", color: T.textMuted, lineHeight: "1.6", margin: 0 }}>
-          {integration.description}
-        </p>
-      </div>
-
-      {/* Footer / Toggle Area */}
-      <div style={{ paddingTop: "20px", borderTop: `1px solid ${T.border}`, display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-        <button
-          onClick={(e) => {
-            e.preventDefault();
-            e.stopPropagation();
-            if (integration.connected && onConfigure) onConfigure(e);
-            else if (!integration.connected && onConnect) onConnect(e);
-            else if (onToggleActive) onToggleActive(integration.id, e);
-          }}
-          style={{
-            background: integration.connected ? "transparent" : T.text,
-            color: integration.connected ? T.text : T.bg,
-            border: integration.connected ? `1px solid ${T.borderHover}` : "none",
-            padding: "8px 16px",
-            borderRadius: "8px",
-            fontSize: "13px",
-            fontWeight: 600,
-            fontFamily: T.font,
-            cursor: "pointer",
-            transition: "all 0.2s ease"
-          }}
-          onMouseEnter={e => {
-            if (integration.connected) e.currentTarget.style.background = T.surfaceHover;
-            else e.currentTarget.style.opacity = "0.85";
-          }}
-          onMouseLeave={e => {
-            if (integration.connected) e.currentTarget.style.background = "transparent";
-            else e.currentTarget.style.opacity = "1";
-          }}
+    <Card className="flex flex-col p-5 transition-[border-color,box-shadow] duration-200 hover:border-pm-line-strong hover:shadow-[0_8px_24px_-12px_rgba(0,0,0,0.12)]">
+      <div className="flex items-start justify-between gap-3">
+        <CompanyLogo domain={integration.domain} dimmed={!integration.connected} logoUrl={integration.logoUrl} />
+        <span
+          className={cn(
+            "inline-flex h-6 items-center gap-1.5 rounded-full px-2.5 text-[11px] font-medium",
+            integration.connected ? "bg-emerald-500/10 text-emerald-600" : "bg-pm-shell text-pm-muted",
+          )}
         >
-          {integration.connected ? "Configure Settings" : "Connect"}
-        </button>
-
-        {/* Minimal Toggle Switch */}
-        <div
-          onClick={(e) => {
-            e.preventDefault();
-            e.stopPropagation();
-            if (integration.connected && onConfigure) onConfigure(e);
-            else if (!integration.connected && onConnect) onConnect(e);
-            else if (onToggleActive) onToggleActive(integration.id, e);
-          }}
-          style={{
-            width: "36px", height: "20px", borderRadius: "10px", cursor: "pointer",
-            background: integration.connected ? T.text : "rgba(255,255,255,0.1)",
-            position: "relative", transition: "background 0.3s ease"
-          }}
-        >
-          <div style={{
-            position: "absolute", top: "2px", left: "2px",
-            width: "16px", height: "16px", borderRadius: "50%",
-            background: integration.connected ? T.bg : T.textMuted,
-            transform: integration.connected ? "translateX(16px)" : "translateX(0)",
-            transition: "transform 0.3s cubic-bezier(0.16, 1, 0.3, 1), background 0.3s ease"
-          }} />
-        </div>
+          <span className={cn("size-1.5 rounded-full", integration.connected ? "bg-emerald-500" : "bg-pm-muted/60")} />
+          {integration.connected ? "Connected" : "Not connected"}
+        </span>
       </div>
 
+      <div className="mt-4 flex-1">
+        <h3 className="text-[15px] font-semibold tracking-tight">{integration.name}</h3>
+        <div className="mt-0.5 text-xs text-pm-muted">{integration.category}</div>
+        <p className="mt-3 text-sm leading-relaxed text-pm-fg/70">{integration.description}</p>
+      </div>
+
+      <div className="mt-5 flex items-center justify-between border-t border-pm-line pt-4">
+        <Button variant={integration.connected ? "outline" : "dark"} size="sm" onClick={act}>
+          {integration.connected ? "Configure" : "Connect"}
+        </Button>
+        <Switch on={integration.connected} onClick={act} label={`${integration.name} connection`} />
+      </div>
+    </Card>
+  );
+}
+
+function SkeletonCard() {
+  return (
+    <Card className="animate-pulse p-5">
+      <div className="flex justify-between">
+        <div className="size-12 rounded-xl bg-pm-shell" />
+        <div className="h-6 w-24 rounded-full bg-pm-shell" />
+      </div>
+      <div className="mt-4 h-4 w-28 rounded bg-pm-shell" />
+      <div className="mt-4 h-3 w-full rounded bg-pm-shell" />
+      <div className="mt-2 h-3 w-4/5 rounded bg-pm-shell" />
+      <div className="mt-5 flex justify-between border-t border-pm-line pt-4">
+        <div className="h-8 w-24 rounded-full bg-pm-shell" />
+        <div className="h-5 w-9 rounded-full bg-pm-shell" />
+      </div>
+    </Card>
+  );
+}
+
+function SettingRow({ label, children }: { label: string; children: React.ReactNode }) {
+  return (
+    <div className="flex items-center justify-between gap-4">
+      <span className="text-[13px] whitespace-nowrap text-pm-muted">{label}</span>
+      <div className="flex min-w-0 items-center gap-2 text-[13px] font-medium">{children}</div>
     </div>
   );
 }
 
-// ─── Main Layout Component ──────────────────────────────────────────────────
+// ─── Page ────────────────────────────────────────────────────────────────────
 
-export default function IntegrationsPanel() {
+export default function IntegrationsPage() {
+  return (
+    <AppShell>
+      <IntegrationsContent />
+    </AppShell>
+  );
+}
+
+function IntegrationsContent() {
+  const { isLoaded: authLoaded, isSignedIn } = useUser();
+  const scrollRef = useRef<HTMLDivElement>(null);
+  useSmoothScroll(scrollRef);
   const router = useRouter();
   const [activeCategory, setActiveCategory] = useState<Category>("All");
   const [integrations, setIntegrations] = useState<Integration[]>(INTEGRATIONS);
 
-  const [notionData, setNotionData] = useState<{ connected: boolean; workspaceName?: string; pages?: any[]; defaultParentPageId?: string } | null>(null);
+  const [notionData, setNotionData] = useState<{ connected: boolean; workspaceName?: string; pages?: { id: string; title: string }[]; defaultParentPageId?: string } | null>(null);
   const [githubData, setGithubData] = useState<{ connected: boolean; username?: string; avatarUrl?: string; repoVisibility?: string } | null>(null);
   const [jiraData, setJiraData] = useState<{ connected: boolean; workspaceName?: string; accountName?: string; projectPreference?: string } | null>(null);
   const [googleCalendarData, setGoogleCalendarData] = useState<{ connected: boolean; email?: string } | null>(null);
@@ -322,89 +304,79 @@ export default function IntegrationsPanel() {
   const [showSettings, setShowSettings] = useState<{ [key: string]: boolean }>({});
   const [error, setError] = useState(false);
 
-  const [isSidebarOpen, setIsSidebarOpen] = useState(false);
-  const [sidebarWidth, setSidebarWidth] = useState(260);
-  const [showLoginModal, setShowLoginModal] = useState(false);
-
   const fetchData = () => {
     setLoadingIntegrations(true);
     setError(false);
     return Promise.all([
-      fetch("/api/notion/pages").then((res) => { if (!res.ok) throw new Error(); return res.json(); }),
-      fetch("/api/integrations").then((res) => { if (!res.ok) throw new Error(); return res.json(); })
-    ]).then(([notionPages, allIntegrations]) => {
-      // Notion
-      setNotionData(notionPages);
-      if (notionPages.defaultParentPageId) setSelectedPage(notionPages.defaultParentPageId);
+      fetch("/api/notion/pages").then((res) => {
+        if (!res.ok) throw new Error();
+        return res.json();
+      }),
+      fetch("/api/integrations").then((res) => {
+        if (!res.ok) throw new Error();
+        return res.json();
+      }),
+    ])
+      .then(([notionPages, all]) => {
+        setNotionData(notionPages);
+        if (notionPages.defaultParentPageId) setSelectedPage(notionPages.defaultParentPageId);
 
-      // GitHub & Jira
-      setGithubData(allIntegrations.github ? { ...allIntegrations.github, connected: !!allIntegrations.github.accessToken } : { connected: false });
-      if (allIntegrations.github?.repoVisibility) setGithubVisibility(allIntegrations.github.repoVisibility);
+        setGithubData(all.github ? { ...all.github, connected: !!all.github.accessToken } : { connected: false });
+        if (all.github?.repoVisibility) setGithubVisibility(all.github.repoVisibility);
 
-      setJiraData(allIntegrations.jira ? { ...allIntegrations.jira, connected: !!allIntegrations.jira.accessToken } : { connected: false });
-      if (allIntegrations.jira?.projectPreference) setJiraPreference(allIntegrations.jira.projectPreference);
+        setJiraData(all.jira ? { ...all.jira, connected: !!all.jira.accessToken } : { connected: false });
+        if (all.jira?.projectPreference) setJiraPreference(all.jira.projectPreference);
 
-      // Google Calendar & Gmail
-      setGoogleCalendarData(allIntegrations.googleCalendar ? { ...allIntegrations.googleCalendar, connected: !!allIntegrations.googleCalendar.accessToken } : { connected: false });
-      setGmailData(allIntegrations.gmail ? { ...allIntegrations.gmail, connected: !!allIntegrations.gmail.accessToken } : { connected: false });
+        setGoogleCalendarData(all.googleCalendar ? { ...all.googleCalendar, connected: !!all.googleCalendar.accessToken } : { connected: false });
+        setGmailData(all.gmail ? { ...all.gmail, connected: !!all.gmail.accessToken } : { connected: false });
 
-      setIntegrations(
-        INTEGRATIONS.map((i) => {
-          if (i.id === "notion") return { ...i, connected: !!notionPages.connected };
-          if (i.id === "github") return { ...i, connected: !!allIntegrations.github?.accessToken };
-          if (i.id === "jira") return { ...i, connected: !!allIntegrations.jira?.accessToken };
-          if (i.id === "calendar") return { ...i, connected: !!allIntegrations.googleCalendar?.accessToken };
-          if (i.id === "gmail") return { ...i, connected: !!allIntegrations.gmail?.accessToken };
-          return i;
-        })
-      );
-      setLoadingIntegrations(false);
-    }).catch((err) => {
-      console.error(err);
-      setError(true);
-      setLoadingIntegrations(false);
-    });
+        setIntegrations(
+          INTEGRATIONS.map((i) => {
+            if (i.id === "notion") return { ...i, connected: !!notionPages.connected };
+            if (i.id === "github") return { ...i, connected: !!all.github?.accessToken };
+            if (i.id === "jira") return { ...i, connected: !!all.jira?.accessToken };
+            if (i.id === "calendar") return { ...i, connected: !!all.googleCalendar?.accessToken };
+            if (i.id === "gmail") return { ...i, connected: !!all.gmail?.accessToken };
+            return i;
+          }),
+        );
+        setLoadingIntegrations(false);
+      })
+      .catch((err) => {
+        console.error(err);
+        setError(true);
+        setLoadingIntegrations(false);
+      });
   };
+
+  // The chat this visit came from (set by "Connect" on a project), so we can send the user back.
+  const [returnSessionId, setReturnSessionId] = useState<string | null>(null);
 
   useEffect(() => {
+    // Signed-out visitors get a sign-in prompt instead of a failed fetch.
+    if (!authLoaded) return;
+    if (!isSignedIn) {
+      setLoadingIntegrations(false);
+      return;
+    }
+    const pending = sessionStorage.getItem("pendingSyncSessionId");
+    // Only bounce back after an OAuth round-trip that this page started and that didn't fail.
+    // Before, arriving from a chat redirected straight away, so the page flashed and closed.
+    const returningFromOAuth = sessionStorage.getItem("pmOAuthStarted") === "1";
+    const failed = Array.from(new URLSearchParams(window.location.search).keys()).some((k) => k.endsWith("_error"));
+    sessionStorage.removeItem("pmOAuthStarted");
+
     fetchData().then(() => {
-      // Check for pending session to redirect after OAuth
-      const pendingSessionId = sessionStorage.getItem('pendingSyncSessionId');
-      if (pendingSessionId) {
-        // Redirect back to chat page with the session
-        sessionStorage.removeItem('pendingSyncSessionId');
-        router.push(`/chat?sessionId=${pendingSessionId}`);
+      if (!pending) return;
+      if (returningFromOAuth && !failed) {
+        sessionStorage.removeItem("pendingSyncSessionId");
+        router.push(`/chat/${pending}`);
+      } else {
+        setReturnSessionId(pending);
       }
     });
-  }, []);
-
-  const handleMouseDown = (e: React.MouseEvent) => {
-    e.preventDefault();
-    document.body.style.userSelect = "none";
-    document.body.style.cursor = "col-resize";
-    let rafId: number;
-    let lastWidth = sidebarWidth;
-    const handleMouseMove = (moveEvent: MouseEvent) => {
-      moveEvent.preventDefault();
-      if (rafId) cancelAnimationFrame(rafId);
-      rafId = requestAnimationFrame(() => {
-        const newWidth = moveEvent.clientX;
-        if (newWidth >= 200 && newWidth <= 500 && newWidth !== lastWidth) {
-          lastWidth = newWidth;
-          setSidebarWidth(newWidth);
-        }
-      });
-    };
-    const handleMouseUp = () => {
-      document.body.style.userSelect = "";
-      document.body.style.cursor = "";
-      if (rafId) cancelAnimationFrame(rafId);
-      document.removeEventListener("mousemove", handleMouseMove);
-      document.removeEventListener("mouseup", handleMouseUp);
-    };
-    document.addEventListener("mousemove", handleMouseMove);
-    document.addEventListener("mouseup", handleMouseUp);
-  };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [authLoaded, isSignedIn]);
 
   const handleSavePage = async (pageId: string) => {
     setSelectedPage(pageId);
@@ -413,7 +385,7 @@ export default function IntegrationsPanel() {
       await fetch("/api/notion/parent-page", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ pageId })
+        body: JSON.stringify({ pageId }),
       });
     } catch (e) {
       console.error(e);
@@ -439,13 +411,8 @@ export default function IntegrationsPanel() {
       } else if (id === "gmail") {
         await fetch("/api/gmail/disconnect", { method: "DELETE" });
       }
-
-      setIntegrations((prev) =>
-        prev.map((i) =>
-          i.id === id ? { ...i, connected: false } : i
-        )
-      );
-      setShowSettings(p => ({ ...p, [id]: false }));
+      setIntegrations((prev) => prev.map((i) => (i.id === id ? { ...i, connected: false } : i)));
+      setShowSettings((p) => ({ ...p, [id]: false }));
     } catch (e) {
       console.error(e);
     } finally {
@@ -460,10 +427,13 @@ export default function IntegrationsPanel() {
       await fetch("/api/github/preferences", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ repoVisibility: visibility })
+        body: JSON.stringify({ repoVisibility: visibility }),
       });
-    } catch (e) { console.error(e); }
-    finally { setSavingGithub(false); }
+    } catch (e) {
+      console.error(e);
+    } finally {
+      setSavingGithub(false);
+    }
   };
 
   const handleJiraPreference = async (pref: string) => {
@@ -473,431 +443,237 @@ export default function IntegrationsPanel() {
       await fetch("/api/jira/preferences", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ projectPreference: pref })
+        body: JSON.stringify({ projectPreference: pref }),
       });
-    } catch (e) { console.error(e); }
-    finally { setSavingJira(false); }
+    } catch (e) {
+      console.error(e);
+    } finally {
+      setSavingJira(false);
+    }
   };
 
   const handleConnect = (id: string, e: React.MouseEvent) => {
     e.preventDefault();
     e.stopPropagation();
     const routeId = id === "calendar" ? "google-calendar" : id;
-    window.location.href = `/api/${routeId}/connect`;
+    sessionStorage.setItem("pmOAuthStarted", "1");
+    window.location.assign(`/api/${routeId}/connect`);
   };
 
   const handleConfigure = (id: string, e: React.MouseEvent) => {
     e.preventDefault();
     e.stopPropagation();
-    setShowSettings(p => ({ ...p, [id]: !p[id] }));
+    setShowSettings((p) => ({ ...p, [id]: !p[id] }));
   };
 
   const handleToggleActive = (id: string, e: React.MouseEvent) => {
     e.preventDefault();
     e.stopPropagation();
-    setIntegrations((prev) =>
-      prev.map((i) =>
-        i.id === id ? { ...i, connected: !i.connected } : i
-      )
-    );
+    setIntegrations((prev) => prev.map((i) => (i.id === id ? { ...i, connected: !i.connected } : i)));
   };
 
-  const filteredIntegrations = integrations.filter(
-    (integration) => activeCategory === "All" || integration.category === activeCategory
+  const filtered = integrations.filter((i) => activeCategory === "All" || i.category === activeCategory);
+  const connectedCount = integrations.filter((i) => i.connected).length;
+  const openSettingsId = Object.keys(showSettings).find((k) => showSettings[k]);
+
+  const disconnectButton = (id: string, name: string) => (
+    <div className="mt-2 flex justify-end border-t border-pm-line pt-4">
+      <Button variant="danger" size="sm" onClick={() => handleDisconnect(id)} disabled={disconnecting === id}>
+        {disconnecting === id ? "Disconnecting…" : `Disconnect ${name}`}
+      </Button>
+    </div>
   );
 
   return (
     <>
-      <div style={{ display: "flex", height: "100vh", width: "100vw", overflow: "hidden", position: "relative", zIndex: 1, backgroundColor: T.bg }}>
-        <Sidebar
-          activeAgentId=""
-          onSelectAgent={() => { }}
-          isOpen={isSidebarOpen}
-          onToggle={() => setIsSidebarOpen(!isSidebarOpen)}
-          sidebarWidth={sidebarWidth}
-          onResize={handleMouseDown}
-          showLoginModal={showLoginModal}
-          onShowLoginModal={setShowLoginModal}
-        />
+      <TopBar
+        left={
+          <>
+            <BackButton />
+            <Crumb icon={<Plug />}>Integrations</Crumb>
+          </>
+        }
+        right={
+          returnSessionId ? (
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => {
+                sessionStorage.removeItem("pendingSyncSessionId");
+                router.push(`/chat/${returnSessionId}`);
+              }}
+            >
+              <ArrowLeft />
+              Back to project
+            </Button>
+          ) : null
+        }
+      />
 
-        <div
-          style={{
-            flex: 1,
-            height: "100%",
-            overflowY: "auto",
-            backgroundColor: T.bg,
-            color: T.text,
-            display: "flex",
-            flexDirection: "column",
-            alignItems: "center",
-            padding: "80px 32px 100px",
-            fontFamily: T.font,
-            position: "relative",
-          }}
-        >
-          {/* ── Ambient Background Glow ── */}
-          <div style={{
-            position: "absolute",
-            top: 0,
-            left: "50%",
-            transform: "translateX(-50%)",
-            width: "800px",
-            height: "300px",
-            background: "radial-gradient(ellipse at top, rgba(255,255,255,0.03) 0%, transparent 70%)",
-            pointerEvents: "none",
-            zIndex: 0
-          }} />
+      <div ref={scrollRef} className="min-h-0 flex-1 overflow-y-auto">
+        <div className="mx-auto w-full max-w-5xl px-5 pt-4 pb-20 sm:px-8">
+          <PageHeading
+            title="Integrations"
+            description="Connect ProdMate to the tools your team already uses, and send plans and docs straight to them."
+            action={
+              !loadingIntegrations && isSignedIn && !error && (
+                <span className="text-sm text-pm-muted">
+                  <span className="font-semibold text-pm-fg tabular-nums">{connectedCount}</span> of {integrations.length} connected
+                </span>
+              )
+            }
+          />
 
-          <div style={{ width: "100%", maxWidth: "1024px", position: "relative", zIndex: 1 }}>
-
-            {/* ───────────────────────────────────────────── */}
-            {/* PAGE HEADER                                   */}
-            {/* ───────────────────────────────────────────── */}
-            <div style={{
-              display: "flex", flexDirection: "column", gap: "8px",
-              marginBottom: "48px",
-              animation: "fadeUp 0.4s ease-out both"
-            }}>
-              <h1 style={{
-                fontSize: "32px", fontWeight: 500, color: T.text, margin: "0",
-                letterSpacing: "-0.02em"
-              }}>
-                Integrations
-              </h1>
-              <p style={{ color: T.textMuted, fontSize: "15px", margin: "8px 0 0 0", maxWidth: "600px", lineHeight: "1.6" }}>
-                Connect ProdMate to your existing toolchain. Export generated planning artifacts and documentation directly into your team's workspace.
-              </p>
-            </div>
-
-            {/* ───────────────────────────────────────────── */}
-            {/* FILTERS                                       */}
-            {/* ───────────────────────────────────────────── */}
-            {!error && (
-              <div style={{
-                display: "flex", alignItems: "center", gap: "12px", marginBottom: "40px",
-                flexWrap: "wrap", animation: "fadeUp 0.4s ease-out 0.1s both"
-              }}>
-                {CATEGORIES.map((category) => {
-                  const isActive = activeCategory === category;
-                  return (
-                    <button
-                      key={category}
-                      onClick={() => setActiveCategory(category)}
-                      style={{
-                        padding: "8px 20px", borderRadius: "100px", fontSize: "13px", fontWeight: 500, fontFamily: T.font,
-                        cursor: "pointer", transition: "all 0.2s ease", whiteSpace: "nowrap",
-                        background: isActive ? T.text : "transparent",
-                        color: isActive ? T.bg : T.textMuted,
-                        border: `1px solid ${isActive ? T.text : T.border}`,
-                      }}
-                      onMouseEnter={e => { if (!isActive) { e.currentTarget.style.color = T.text; e.currentTarget.style.background = "rgba(255,255,255,0.03)"; } }}
-                      onMouseLeave={e => { if (!isActive) { e.currentTarget.style.color = T.textMuted; e.currentTarget.style.background = "transparent"; } }}
-                    >
-                      {category}
-                    </button>
-                  );
-                })}
-              </div>
-            )}
-
-            {/* ───────────────────────────────────────────── */}
-            {/* ERROR STATE                                   */}
-            {/* ───────────────────────────────────────────── */}
-            {error && (
-              <div style={{
-                background: "rgba(239, 68, 68, 0.1)", border: "1px solid rgba(239, 68, 68, 0.2)",
-                borderRadius: "12px", padding: "24px", display: "flex", alignItems: "center", justifyContent: "space-between",
-                marginBottom: "24px", animation: "fadeUp 0.3s ease-out both"
-              }}>
-                <div style={{ display: "flex", alignItems: "center", gap: "12px", color: "#f87171", fontSize: "14px" }}>
-                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                    <circle cx="12" cy="12" r="10"></circle><line x1="12" y1="8" x2="12" y2="12"></line><line x1="12" y1="16" x2="12.01" y2="16"></line>
-                  </svg>
-                  Unable to load integrations.
-                </div>
+          {!error && isSignedIn && (
+            <div className="mt-8 flex flex-wrap gap-1 rounded-xl border border-pm-line bg-pm-shell/60 p-1 sm:inline-flex">
+              {CATEGORIES.map((category) => (
                 <button
-                  onClick={fetchData}
-                  style={{
-                    background: "rgba(239, 68, 68, 0.2)", border: "none", color: "#fca5a5",
-                    padding: "8px 16px", borderRadius: "6px", fontSize: "13px", fontWeight: 500, cursor: "pointer", transition: "all 0.2s"
-                  }}
-                  onMouseEnter={e => e.currentTarget.style.background = "rgba(239, 68, 68, 0.3)"}
-                  onMouseLeave={e => e.currentTarget.style.background = "rgba(239, 68, 68, 0.2)"}
+                  key={category}
+                  type="button"
+                  onClick={() => setActiveCategory(category)}
+                  className={cn(
+                    "h-8 rounded-lg px-3.5 text-[13px] font-medium whitespace-nowrap transition-colors",
+                    activeCategory === category
+                      ? "bg-pm-card text-pm-fg shadow-[0_1px_2px_rgba(0,0,0,0.06),0_0_0_1px_var(--pm-line)]"
+                      : "text-pm-muted hover:text-pm-fg",
+                  )}
                 >
-                  Retry
+                  {category}
                 </button>
-              </div>
-            )}
+              ))}
+            </div>
+          )}
 
-            {/* ───────────────────────────────────────────── */}
-            {/* INTEGRATIONS GRID                             */}
-            {/* ───────────────────────────────────────────── */}
-            {!error && (
-              <div style={{
-                display: "grid",
-                gridTemplateColumns: "repeat(auto-fill, minmax(340px, 1fr))",
-                gap: "24px",
-                alignItems: "flex-start",
-                animation: "fadeUp 0.4s ease-out 0.2s both"
-              }}>
-                {loadingIntegrations ? (
-                  [1, 2, 3, 4].map(i => (
-                    <div key={i} style={{ display: "flex", flexDirection: "column", background: T.surface, border: `1px solid ${T.border}`, borderRadius: "16px", padding: "24px", animation: "pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite" }}>
-                      <div style={{ display: "flex", justifyContent: "space-between", marginBottom: "20px" }}>
-                        <div style={{ width: "48px", height: "48px", borderRadius: "12px", background: "rgba(255,255,255,0.05)" }} />
-                        <div style={{ width: "60px", height: "24px", borderRadius: "6px", background: "rgba(255,255,255,0.05)" }} />
-                      </div>
-                      <div style={{ width: "120px", height: "20px", borderRadius: "4px", background: "rgba(255,255,255,0.05)", marginBottom: "12px" }} />
-                      <div style={{ width: "100%", height: "14px", borderRadius: "4px", background: "rgba(255,255,255,0.05)", marginBottom: "8px" }} />
-                      <div style={{ width: "80%", height: "14px", borderRadius: "4px", background: "rgba(255,255,255,0.05)", marginBottom: "24px" }} />
-                      <div style={{ paddingTop: "20px", borderTop: `1px solid ${T.border}`, display: "flex", justifyContent: "space-between" }}>
-                        <div style={{ width: "100px", height: "32px", borderRadius: "8px", background: "rgba(255,255,255,0.05)" }} />
-                        <div style={{ width: "36px", height: "20px", borderRadius: "10px", background: "rgba(255,255,255,0.05)" }} />
-                      </div>
-                    </div>
-                  ))
-                ) : (
-                  filteredIntegrations.map((integration) => (
-                    <IntegrationCard
-                      key={integration.id}
-                      integration={integration}
-                      onConnect={["notion", "github", "jira", "calendar", "gmail"].includes(integration.id) ? (e) => handleConnect(integration.id, e) : undefined}
-                      onConfigure={["notion", "github", "jira", "calendar", "gmail"].includes(integration.id) ? (e) => handleConfigure(integration.id, e) : undefined}
-                      onToggleActive={!["notion", "github", "jira", "calendar", "gmail"].includes(integration.id) ? (id, e) => handleToggleActive(id, e) : undefined}
-                    />
-                  ))
-                )}
+          {authLoaded && !isSignedIn ? (
+            <Card className="mt-8 flex flex-wrap items-center justify-between gap-4 p-5">
+              <div>
+                <div className="text-sm font-semibold">Sign in to connect your tools</div>
+                <p className="mt-0.5 text-[13px] text-pm-muted">Your Notion, GitHub, Jira, Calendar and Gmail connections are saved to your account.</p>
               </div>
-            )}
-          </div>
+              <Button variant="primary" size="sm" onClick={() => router.push("/login")}>
+                Log in
+              </Button>
+            </Card>
+          ) : error ? (
+            <Card className="mt-8 flex flex-wrap items-center justify-between gap-4 border-pm-danger/30 p-5">
+              <div className="flex items-center gap-3 text-sm text-pm-danger">
+                <CircleAlert className="size-5" />
+                Couldn&apos;t load your integrations.
+              </div>
+              <Button variant="outline" size="sm" onClick={fetchData}>
+                <RefreshCw />
+                Retry
+              </Button>
+            </Card>
+          ) : (
+            <div className="mt-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+              {loadingIntegrations
+                ? [0, 1, 2].map((i) => <SkeletonCard key={i} />)
+                : filtered.map((integration, i) => (
+                    <div key={integration.id} className="fade-up" style={{ "--delay": `${i * 0.04}s`, "--rise": "8px" } as React.CSSProperties}>
+                      <IntegrationCard
+                        integration={integration}
+                        onConnect={OAUTH_IDS.includes(integration.id) ? (e) => handleConnect(integration.id, e) : undefined}
+                        onConfigure={OAUTH_IDS.includes(integration.id) ? (e) => handleConfigure(integration.id, e) : undefined}
+                        onToggleActive={!OAUTH_IDS.includes(integration.id) ? (id, e) => handleToggleActive(id, e) : undefined}
+                      />
+                    </div>
+                  ))}
+            </div>
+          )}
         </div>
       </div>
 
-      {/* ───────────────────────────────────────────── */}
-      {/* CONFIGURATION MODAL                           */}
-      {/* ───────────────────────────────────────────── */}
-      {Object.values(showSettings).some(Boolean) && (
-        <div style={{
-          position: "fixed", top: 0, left: 0, right: 0, bottom: 0, zIndex: 9999,
-          background: "rgba(0,0,0,0.6)", backdropFilter: "blur(4px)",
-          display: "flex", alignItems: "center", justifyContent: "center",
-          animation: "fadeIn 0.2s ease-out"
-        }}>
-          <div style={{
-            background: T.bg, border: `1px solid ${T.border}`, borderRadius: "16px",
-            width: "440px", maxWidth: "90vw", padding: "32px",
-            boxShadow: "0 20px 40px rgba(0,0,0,0.5)",
-            position: "relative",
-            fontFamily: T.font
-          }}>
-            {/* Close button */}
-            <button 
-              onClick={() => setShowSettings({})}
-              style={{ position: "absolute", top: "24px", right: "24px", background: "transparent", border: "none", color: T.textMuted, cursor: "pointer" }}
-            >
-              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
-            </button>
+      {/* Settings for a connected integration */}
+      {openSettingsId && (
+        <Modal onClose={() => setShowSettings({})} labelledBy="integration-settings-title">
+          <IconButton onClick={() => setShowSettings({})} title="Close" className="absolute top-4 right-4">
+            <X />
+          </IconButton>
+          <h2 id="integration-settings-title" className="mb-6 text-base font-semibold tracking-tight">
+            {SETTINGS_TITLE[openSettingsId] ?? "Settings"}
+          </h2>
 
-            <h2 style={{ margin: "0 0 24px 0", fontSize: "18px", color: T.text, fontWeight: 500 }}>
-              {showSettings["notion"] ? "Notion Settings" 
-                : showSettings["github"] ? "GitHub Settings" 
-                : showSettings["jira"] ? "Jira Settings" 
-                : showSettings["calendar"] ? "Google Calendar Settings"
-                : "Gmail Settings"}
-            </h2>
+          {showSettings["notion"] && notionData?.connected && (
+            <div className="flex flex-col gap-4">
+              <SettingRow label="Workspace">{notionData.workspaceName}</SettingRow>
+              <SettingRow label="Parent page">
+                <CustomSelect
+                  value={selectedPage}
+                  onChange={handleSavePage}
+                  disabled={savingPage}
+                  placeholder="Select a page…"
+                  options={notionData.pages?.map((p) => ({ label: p.title, value: p.id })) || []}
+                />
+              </SettingRow>
+              {!selectedPage && (
+                <p className="flex items-center justify-end gap-1.5 text-xs text-amber-600">
+                  <TriangleAlert className="size-3.5" />
+                  Pick a page to turn on exports.
+                </p>
+              )}
+              {disconnectButton("notion", "Notion")}
+            </div>
+          )}
 
-            {/* NOTION SETTINGS SECTION */}
-            {showSettings["notion"] && notionData?.connected && (
-              <div style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
-                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-                  <span style={{ fontSize: "13px", color: T.textMuted }}>Connected Workspace</span>
-                  <span style={{ fontSize: "13px", color: T.text, fontWeight: 500 }}>{notionData.workspaceName}</span>
-                </div>
-
-                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: "12px" }}>
-                  <span style={{ fontSize: "13px", color: T.textMuted, whiteSpace: "nowrap" }}>Parent Page</span>
-                  <CustomSelect
-                    value={selectedPage}
-                    onChange={(val: string) => handleSavePage(val)}
-                    disabled={savingPage}
-                    placeholder="Select a page..."
-                    options={notionData.pages?.map(p => ({ label: p.title, value: p.id })) || []}
-                    width="180px"
-                  />
-                </div>
-
-                {!selectedPage && (
-                  <div style={{ fontSize: "12px", color: "#f59e0b", textAlign: "right" }}>
-                    ⚠️ Select a page to enable exports.
-                  </div>
+          {showSettings["github"] && githubData?.connected && (
+            <div className="flex flex-col gap-4">
+              <SettingRow label="Account">
+                {githubData.avatarUrl && (
+                  // eslint-disable-next-line @next/next/no-img-element
+                  <img src={githubData.avatarUrl} alt="" width={20} height={20} className="rounded-full" />
                 )}
+                <span className="truncate">{githubData.username}</span>
+              </SettingRow>
+              <SettingRow label="Repo visibility">
+                <CustomSelect
+                  value={githubVisibility}
+                  onChange={handleGithubVisibility}
+                  disabled={savingGithub}
+                  options={[
+                    { label: "Private (recommended)", value: "private" },
+                    { label: "Public", value: "public" },
+                  ]}
+                />
+              </SettingRow>
+              {disconnectButton("github", "GitHub")}
+            </div>
+          )}
 
-                <div style={{ display: "flex", justifyContent: "flex-end", marginTop: "16px", paddingTop: "16px", borderTop: `1px solid ${T.border}` }}>
-                  <button
-                    onClick={() => handleDisconnect("notion")}
-                    disabled={disconnecting === "notion"}
-                    style={{
-                      padding: "8px 16px", background: "transparent", border: "1px solid rgba(239, 68, 68, 0.3)", color: "#f87171",
-                      borderRadius: "8px", fontSize: "12px", fontWeight: 500, cursor: disconnecting === "notion" ? "not-allowed" : "pointer", transition: "all 0.2s ease", opacity: disconnecting === "notion" ? 0.5 : 1
-                    }}
-                    onMouseEnter={(e) => { if (disconnecting !== "notion") { e.currentTarget.style.background = "rgba(239, 68, 68, 0.1)"; e.currentTarget.style.borderColor = "rgba(239, 68, 68, 0.5)"; } }}
-                    onMouseLeave={(e) => { if (disconnecting !== "notion") { e.currentTarget.style.background = "transparent"; e.currentTarget.style.borderColor = "rgba(239, 68, 68, 0.3)"; } }}
-                  >
-                    Disconnect Notion
-                  </button>
-                </div>
-              </div>
-            )}
+          {showSettings["jira"] && jiraData?.connected && (
+            <div className="flex flex-col gap-4">
+              <SettingRow label="Workspace">{jiraData.workspaceName}</SettingRow>
+              <SettingRow label="Account">{jiraData.accountName}</SettingRow>
+              <SettingRow label="Project">
+                <CustomSelect
+                  value={jiraPreference}
+                  onChange={handleJiraPreference}
+                  disabled={savingJira}
+                  options={[
+                    { label: "Create new project", value: "CREATE_NEW" },
+                    { label: "Select existing", value: "SELECT_EXISTING" },
+                  ]}
+                />
+              </SettingRow>
+              {disconnectButton("jira", "Jira")}
+            </div>
+          )}
 
-            {/* GITHUB SETTINGS SECTION */}
-            {showSettings["github"] && githubData?.connected && (
-              <div style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
-                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-                  <span style={{ fontSize: "13px", color: T.textMuted }}>Connected Account</span>
-                  <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
-                    {githubData.avatarUrl && <img src={githubData.avatarUrl} alt="Avatar" width="20" height="20" style={{ borderRadius: "50%" }} />}
-                    <span style={{ fontSize: "13px", color: T.text, fontWeight: 500 }}>{githubData.username}</span>
-                  </div>
-                </div>
+          {showSettings["calendar"] && googleCalendarData?.connected && (
+            <div className="flex flex-col gap-4">
+              <SettingRow label="Account">{googleCalendarData.email}</SettingRow>
+              {disconnectButton("calendar", "Google Calendar")}
+            </div>
+          )}
 
-                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: "12px" }}>
-                  <span style={{ fontSize: "13px", color: T.textMuted, whiteSpace: "nowrap" }}>Repo Visibility</span>
-                  <CustomSelect
-                    value={githubVisibility}
-                    onChange={(val: string) => handleGithubVisibility(val)}
-                    disabled={savingGithub}
-                    options={[
-                      { label: "Private (Recommended)", value: "private" },
-                      { label: "Public", value: "public" }
-                    ]}
-                    width="180px"
-                  />
-                </div>
-
-                <div style={{ display: "flex", justifyContent: "flex-end", marginTop: "16px", paddingTop: "16px", borderTop: `1px solid ${T.border}` }}>
-                  <button
-                    onClick={() => handleDisconnect("github")}
-                    disabled={disconnecting === "github"}
-                    style={{
-                      padding: "8px 16px", background: "transparent", border: "1px solid rgba(239, 68, 68, 0.3)", color: "#f87171", borderRadius: "8px", fontSize: "12px", fontWeight: 500, cursor: disconnecting === "github" ? "not-allowed" : "pointer", transition: "all 0.2s ease", opacity: disconnecting === "github" ? 0.5 : 1
-                    }}
-                    onMouseEnter={(e) => { if (disconnecting !== "github") { e.currentTarget.style.background = "rgba(239, 68, 68, 0.1)"; e.currentTarget.style.borderColor = "rgba(239, 68, 68, 0.5)"; } }}
-                    onMouseLeave={(e) => { if (disconnecting !== "github") { e.currentTarget.style.background = "transparent"; e.currentTarget.style.borderColor = "rgba(239, 68, 68, 0.3)"; } }}
-                  >
-                    Disconnect GitHub
-                  </button>
-                </div>
-              </div>
-            )}
-
-            {/* JIRA SETTINGS SECTION */}
-            {showSettings["jira"] && jiraData?.connected && (
-              <div style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
-                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-                  <span style={{ fontSize: "13px", color: T.textMuted }}>Connected Workspace</span>
-                  <span style={{ fontSize: "13px", color: T.text, fontWeight: 500 }}>{jiraData.workspaceName}</span>
-                </div>
-                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-                  <span style={{ fontSize: "13px", color: T.textMuted }}>Connected Account</span>
-                  <span style={{ fontSize: "13px", color: T.text, fontWeight: 500 }}>{jiraData.accountName}</span>
-                </div>
-
-                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: "12px" }}>
-                  <span style={{ fontSize: "13px", color: T.textMuted, whiteSpace: "nowrap" }}>Project Config</span>
-                  <CustomSelect
-                    value={jiraPreference}
-                    onChange={(val: string) => handleJiraPreference(val)}
-                    disabled={savingJira}
-                    options={[
-                      { label: "Create New Project", value: "CREATE_NEW" },
-                      { label: "Select Existing", value: "SELECT_EXISTING" }
-                    ]}
-                    width="180px"
-                  />
-                </div>
-
-                <div style={{ display: "flex", justifyContent: "flex-end", marginTop: "16px", paddingTop: "16px", borderTop: `1px solid ${T.border}` }}>
-                  <button
-                    onClick={() => handleDisconnect("jira")}
-                    disabled={disconnecting === "jira"}
-                    style={{
-                      padding: "8px 16px", background: "transparent", border: "1px solid rgba(239, 68, 68, 0.3)", color: "#f87171", borderRadius: "8px", fontSize: "12px", fontWeight: 500, cursor: disconnecting === "jira" ? "not-allowed" : "pointer", transition: "all 0.2s ease", opacity: disconnecting === "jira" ? 0.5 : 1
-                    }}
-                    onMouseEnter={(e) => { if (disconnecting !== "jira") { e.currentTarget.style.background = "rgba(239, 68, 68, 0.1)"; e.currentTarget.style.borderColor = "rgba(239, 68, 68, 0.5)"; } }}
-                    onMouseLeave={(e) => { if (disconnecting !== "jira") { e.currentTarget.style.background = "transparent"; e.currentTarget.style.borderColor = "rgba(239, 68, 68, 0.3)"; } }}
-                  >
-                    Disconnect Jira
-                  </button>
-                </div>
-              </div>
-            )}
-
-            {/* GOOGLE CALENDAR SETTINGS SECTION */}
-            {showSettings["calendar"] && googleCalendarData?.connected && (
-              <div style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
-                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-                  <span style={{ fontSize: "13px", color: T.textMuted }}>Connected Account</span>
-                  <span style={{ fontSize: "13px", color: T.text, fontWeight: 500 }}>{googleCalendarData.email}</span>
-                </div>
-
-                <div style={{ display: "flex", justifyContent: "flex-end", marginTop: "16px", paddingTop: "16px", borderTop: `1px solid ${T.border}` }}>
-                  <button
-                    onClick={() => handleDisconnect("calendar")}
-                    disabled={disconnecting === "calendar"}
-                    style={{
-                      padding: "8px 16px", background: "transparent", border: "1px solid rgba(239, 68, 68, 0.3)", color: "#f87171", borderRadius: "8px", fontSize: "12px", fontWeight: 500, cursor: disconnecting === "calendar" ? "not-allowed" : "pointer", transition: "all 0.2s ease", opacity: disconnecting === "calendar" ? 0.5 : 1
-                    }}
-                    onMouseEnter={(e) => { if (disconnecting !== "calendar") { e.currentTarget.style.background = "rgba(239, 68, 68, 0.1)"; e.currentTarget.style.borderColor = "rgba(239, 68, 68, 0.5)"; } }}
-                    onMouseLeave={(e) => { if (disconnecting !== "calendar") { e.currentTarget.style.background = "transparent"; e.currentTarget.style.borderColor = "rgba(239, 68, 68, 0.3)"; } }}
-                  >
-                    Disconnect Google Calendar
-                  </button>
-                </div>
-              </div>
-            )}
-
-            {/* GMAIL SETTINGS SECTION */}
-            {showSettings["gmail"] && gmailData?.connected && (
-              <div style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
-                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-                  <span style={{ fontSize: "13px", color: T.textMuted }}>Connected Account</span>
-                  <span style={{ fontSize: "13px", color: T.text, fontWeight: 500 }}>{gmailData.email}</span>
-                </div>
-
-                <div style={{ display: "flex", justifyContent: "flex-end", marginTop: "16px", paddingTop: "16px", borderTop: `1px solid ${T.border}` }}>
-                  <button
-                    onClick={() => handleDisconnect("gmail")}
-                    disabled={disconnecting === "gmail"}
-                    style={{
-                      padding: "8px 16px", background: "transparent", border: "1px solid rgba(239, 68, 68, 0.3)", color: "#f87171", borderRadius: "8px", fontSize: "12px", fontWeight: 500, cursor: disconnecting === "gmail" ? "not-allowed" : "pointer", transition: "all 0.2s ease", opacity: disconnecting === "gmail" ? 0.5 : 1
-                    }}
-                    onMouseEnter={(e) => { if (disconnecting !== "gmail") { e.currentTarget.style.background = "rgba(239, 68, 68, 0.1)"; e.currentTarget.style.borderColor = "rgba(239, 68, 68, 0.5)"; } }}
-                    onMouseLeave={(e) => { if (disconnecting !== "gmail") { e.currentTarget.style.background = "transparent"; e.currentTarget.style.borderColor = "rgba(239, 68, 68, 0.3)"; } }}
-                  >
-                    Disconnect Gmail
-                  </button>
-                </div>
-              </div>
-            )}
-
-          </div>
-        </div>
+          {showSettings["gmail"] && gmailData?.connected && (
+            <div className="flex flex-col gap-4">
+              <SettingRow label="Account">{gmailData.email}</SettingRow>
+              {disconnectButton("gmail", "Gmail")}
+            </div>
+          )}
+        </Modal>
       )}
-
-
-      {/* Animations & Global Styles */}
-      <style dangerouslySetInnerHTML={{
-        __html: `
-        @keyframes fadeUp { 
-          from { opacity: 0; transform: translateY(12px); } 
-          to { opacity: 1; transform: translateY(0); } 
-        }
-        @keyframes pulse {
-          0%, 100% { opacity: 1; }
-          50% { opacity: .5; }
-        }
-      `}} />
-      <LoginModal isOpen={showLoginModal} onClose={() => setShowLoginModal(false)} onLogin={() => window.location.href = "/login"} />
     </>
   );
 }

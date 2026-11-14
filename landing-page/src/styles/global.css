@@ -1,0 +1,159 @@
+@import 'tailwindcss';
+@import '@fontsource-variable/inter';
+
+@theme {
+  --font-sans: 'Inter Variable', ui-sans-serif, system-ui, sans-serif;
+  --font-mono: ui-monospace, 'SF Mono', SFMono-Regular, Menlo, monospace;
+}
+
+/* Design tokens, used as `bg-pm-*`, `text-pm-*`, `border-pm-*`. The page is light only. */
+@theme inline {
+  --color-pm-bg: var(--pm-bg);
+  --color-pm-fg: var(--pm-fg);
+  --color-pm-muted: var(--pm-muted);
+  --color-pm-shell: var(--pm-shell);
+  --color-pm-card: var(--pm-card);
+  --color-pm-line: var(--pm-line);
+  --color-pm-primary: var(--pm-primary);
+  --color-pm-primary-fg: var(--pm-primary-fg);
+  --color-pm-accent: var(--pm-accent);
+}
+
+:root {
+  --pm-bg: oklch(1 0 0);
+  --pm-fg: oklch(0.145 0 0);
+  --pm-muted: oklch(0.556 0 0);
+  /* Outer shell of cards and hover fills; content sits on --pm-card inside it. */
+  --pm-shell: oklch(0.965 0 0);
+  --pm-card: oklch(1 0 0);
+  --pm-line: oklch(0.922 0 0);
+  /* Prodmate violet: fills only (buttons, dots), with white text on top (4.6:1). */
+  --pm-primary: #6c5ce7;
+  --pm-primary-fg: #ffffff;
+  /* Deeper violet for text or small icons on white. */
+  --pm-accent: #4f3fc4;
+
+  --ease-pm: cubic-bezier(0.16, 1, 0.3, 1);
+
+  color-scheme: light;
+  background: var(--pm-bg);
+  color: var(--pm-fg);
+  scrollbar-gutter: stable;
+}
+
+/* Smooth scrolling comes from Lenis (src/lib/smooth-scroll.ts); CSS smooth-scroll would fight it. */
+html {
+  -webkit-font-smoothing: antialiased;
+}
+
+::selection {
+  background: color-mix(in oklch, var(--pm-primary) 25%, transparent);
+}
+
+/* Body text of the docs and legal pages (src/components/layout/toc-layout.tsx): plain HTML,
+   styled here so the page components stay readable. */
+.prose-pm {
+  font-size: 15px;
+  line-height: 1.7;
+  color: color-mix(in oklch, var(--pm-fg) 75%, transparent);
+  text-wrap: pretty;
+}
+.prose-pm > * + * {
+  margin-top: 1rem;
+}
+.prose-pm h3 {
+  margin-top: 1.75rem;
+  font-size: 15px;
+  font-weight: 500;
+  color: var(--pm-fg);
+}
+.prose-pm strong {
+  font-weight: 500;
+  color: var(--pm-fg);
+}
+.prose-pm a {
+  color: var(--pm-fg);
+  text-decoration: underline;
+  text-decoration-color: var(--pm-line);
+  text-underline-offset: 3px;
+  transition: text-decoration-color 200ms;
+}
+.prose-pm a:hover {
+  text-decoration-color: currentColor;
+}
+.prose-pm ul,
+.prose-pm ol {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  padding-left: 1.25rem;
+}
+.prose-pm ul {
+  list-style: disc;
+}
+.prose-pm ol {
+  list-style: decimal;
+}
+.prose-pm li::marker {
+  color: var(--pm-muted);
+}
+.prose-pm :not(pre) > code {
+  border-radius: 0.375rem;
+  background: var(--pm-shell);
+  padding: 0.125rem 0.375rem;
+  font-family: var(--font-mono);
+  font-size: 13px;
+  color: var(--pm-fg);
+  white-space: nowrap;
+}
+.prose-pm pre {
+  overflow-x: auto;
+  border-radius: 0.75rem;
+  border: 1px solid var(--pm-line);
+  background: var(--pm-shell);
+  padding: 1rem;
+  font-family: var(--font-mono);
+  font-size: 12.5px;
+  line-height: 1.7;
+  color: var(--pm-fg);
+}
+
+/* Fades content up the first time it scrolls into view (src/components/ui/reveal.tsx). Hidden only
+   once scripts run (`.js` on <html>), so nothing stays invisible without them. */
+[data-reveal] {
+  transition:
+    opacity 0.7s var(--ease-pm) var(--reveal-delay, 0s),
+    translate 0.7s var(--ease-pm) var(--reveal-delay, 0s);
+}
+
+.js [data-reveal]:not([data-shown]) {
+  opacity: 0;
+  translate: 0 16px;
+}
+
+/* Fades up into place as the page loads. `--rise`, `--duration` and `--delay` tune each use. */
+@keyframes pm-fade-up {
+  from {
+    opacity: 0;
+    translate: 0 var(--rise, 16px);
+  }
+}
+
+.fade-up {
+  animation: pm-fade-up var(--duration, 0.7s) var(--ease-pm) var(--delay, 0s) both;
+}
+
+/* Reduced motion keeps the fades and drops the movement. */
+@media (prefers-reduced-motion: reduce) {
+  html {
+    scroll-behavior: auto;
+  }
+  .js [data-reveal]:not([data-shown]) {
+    translate: none;
+  }
+  @keyframes pm-fade-up {
+    from {
+      opacity: 0;
+    }
+  }
+}

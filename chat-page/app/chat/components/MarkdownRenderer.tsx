@@ -1,73 +1,72 @@
 "use client";
 
-import React, { useEffect, useState, useRef } from "react";
+import React, { useEffect, useState } from "react";
+import { Check, Info, TriangleAlert } from "lucide-react";
+import { cn } from "@/lib/cn";
+import FolderStructureViewer from "./FolderStructureViewer";
 
-// ── ProdMate Design Tokens (ProdMate Minimal Palette) ──────────
-const T = {
-  bg: "#09090b",
-  surface: "#121214",
-  surfaceHover: "#18181b",
-  border: "#27272a",
-  borderHover: "#3f3f46",
-  text: "#ededed",
-  textMuted: "#a1a1aa",
-  textHint: "#71717a",
-  accent: "#ffffff",
-  font: "var(--font-satoshi), system-ui, -apple-system, sans-serif",
-  mono: '"Geist Mono", ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace',
-};
+/** Watches the `.dark` class on <html> so diagrams can re-render in the right theme. */
+function useIsDark() {
+  const [dark, setDark] = useState(false);
+  useEffect(() => {
+    const el = document.documentElement;
+    const update = () => setDark(el.classList.contains("dark"));
+    update();
+    const mo = new MutationObserver(update);
+    mo.observe(el, { attributes: true, attributeFilter: ["class"] });
+    return () => mo.disconnect();
+  }, []);
+  return dark;
+}
 
 const MermaidRenderer = ({ source }: { source: string }) => {
   const [svgHtml, setSvgHtml] = useState<string>("");
   const [error, setError] = useState<string | null>(null);
-  const containerRef = useRef<HTMLDivElement>(null);
+  const dark = useIsDark();
 
   useEffect(() => {
     let isMounted = true;
     const id = `mermaid-md-${Math.random().toString(36).substring(2, 11)}`;
-    
     import("mermaid").then((mermaidModule) => {
       const mermaid = mermaidModule.default;
-      mermaid.initialize({ startOnLoad: false, theme: "dark" });
-      mermaid.render(id, source)
+      mermaid.initialize({
+        startOnLoad: false,
+        theme: dark ? "dark" : "neutral",
+        fontFamily: "Inter, ui-sans-serif, system-ui, sans-serif",
+      });
+      mermaid
+        .render(id, source)
         .then(({ svg }) => {
-          if (isMounted) setSvgHtml(svg);
+          if (isMounted) {
+            setSvgHtml(svg);
+            setError(null);
+          }
         })
         .catch((err) => {
           if (isMounted) setError(String(err));
           // Clean up leaked error elements
-          const el = document.getElementById('d' + id);
+          const el = document.getElementById("d" + id);
           if (el) el.remove();
         });
     });
-    
     return () => {
       isMounted = false;
     };
-  }, [source]);
+  }, [source, dark]);
 
   if (error) {
     return (
-      <div style={{ background: "#2e0f0f", border: "1px solid #7a2626", color: "#fca5a5", padding: "12px", borderRadius: "8px", fontSize: "12px", fontFamily: T.mono, overflowX: "auto" }}>
-        Failed to render diagram: {error}
-        <pre style={{ marginTop: "8px", opacity: 0.8 }}>{source}</pre>
+      <div className="my-4 overflow-x-auto rounded-xl border border-pm-danger/30 bg-pm-danger/5 p-3 font-mono text-xs text-pm-danger">
+        Couldn&apos;t draw this diagram: {error}
+        <pre className="mt-2 text-pm-fg/70">{source}</pre>
       </div>
     );
   }
 
   return (
-    <div 
-      ref={containerRef}
-      dangerouslySetInnerHTML={{ __html: svgHtml }} 
-      style={{ 
-        display: 'flex', 
-        justifyContent: 'center', 
-        margin: '24px 0',
-        padding: '16px',
-        background: T.surfaceHover,
-        borderRadius: '8px',
-        border: `1px solid ${T.border}`
-      }} 
+    <div
+      className="my-5 flex justify-center overflow-x-auto rounded-xl border border-pm-line bg-pm-shell/50 p-4 [&_svg]:max-w-full"
+      dangerouslySetInnerHTML={{ __html: svgHtml }}
     />
   );
 };
@@ -77,36 +76,46 @@ interface MarkdownRendererProps {
 }
 
 export default function MarkdownRenderer({ content }: MarkdownRendererProps) {
-  /**
-   * Robust inline parser for **bold** and `code` tags.
-   */
+  /** Inline parser for **bold**, *italic*, `code` and [links](url). */
   const renderInlineText = (text: string) => {
-    const parts = text.split(/(\*\*.*?\*\*|`[^`]+`)/g);
+    const parts = text.split(/(\*\*.*?\*\*|`[^`]+`|\[[^\]]+\]\([^)]+\)|(?<![*\w])\*[^*\s][^*]*\*(?!\*))/g);
 
     return parts.map((part, index) => {
-      if (part.startsWith("**") && part.endsWith("**")) {
+      if (!part) return null;
+      if (part.startsWith("**") && part.endsWith("**") && part.length > 4) {
         return (
-          <span key={index} style={{ color: T.accent, fontWeight: 600 }}>
+          <strong key={index} className="font-semibold text-pm-fg">
             {part.slice(2, -2)}
-          </span>
+          </strong>
         );
       }
       if (part.startsWith("`") && part.endsWith("`")) {
         return (
-          <code
-            key={index}
-            style={{
-              fontSize: "12px",
-              background: T.surfaceHover,
-              color: T.text,
-              padding: "2px 6px",
-              borderRadius: "4px",
-              border: `1px solid ${T.border}`,
-              fontFamily: T.mono,
-            }}
-          >
+          <code key={index} className="rounded-md border border-pm-line bg-pm-shell px-1.5 py-0.5 font-mono text-[12px] text-pm-fg">
             {part.slice(1, -1)}
           </code>
+        );
+      }
+      const link = part.match(/^\[([^\]]+)\]\(([^)]+)\)$/);
+      if (link) {
+        const safe = /^(https?:|mailto:|\/|#)/i.test(link[2]) ? link[2] : "#";
+        return (
+          <a
+            key={index}
+            href={safe}
+            target={safe.startsWith("http") ? "_blank" : undefined}
+            rel="noopener noreferrer"
+            className="font-medium text-pm-accent underline decoration-pm-accent/30 underline-offset-2 hover:decoration-pm-accent"
+          >
+            {link[1]}
+          </a>
+        );
+      }
+      if (part.length > 2 && part.startsWith("*") && part.endsWith("*")) {
+        return (
+          <em key={index} className="italic">
+            {part.slice(1, -1)}
+          </em>
         );
       }
       return <span key={index}>{part}</span>;
@@ -114,7 +123,14 @@ export default function MarkdownRenderer({ content }: MarkdownRendererProps) {
   };
 
   // 1. Split content into lines (normalize all line endings first)
-  const rawLines = (content ?? "").replace(/\r\n/g, "\n").replace(/\r/g, "\n").split("\n");
+  const normalized = (content ?? "")
+    .replace(/\r\n?/g, "\n")
+    .replace(/<br\s*\/?>/gi, "\n")
+    .replace(/\\([-*_#>`|.()[\]!+])/g, "$1")
+    .replace(/^(\s*)\+\s+/gm, "$1- ")
+    .replace(/^(\s*)(\d+)\)\s+/gm, "$1$2. ")
+    .replace(/[ \t]+$/gm, "");
+  const rawLines = normalized.split("\n");
 
   // 2. Find first non-empty line to kill top whitespace
   let firstNonEmptyIndex = rawLines.findIndex((line) => line.trim() !== "");
@@ -123,7 +139,9 @@ export default function MarkdownRenderer({ content }: MarkdownRendererProps) {
   const lines = rawLines.slice(firstNonEmptyIndex);
 
   // 3. Pre-process blocks to group tables, code blocks, and raw mermaid diagrams
-  const blocks: { type: string; content?: string; lines?: string[]; language?: string; isFirst?: boolean; originalIndex?: number }[] = [];
+  const blocks: { type: string; content?: string; lines?: string[]; language?: string; isFirst?: boolean; originalIndex?: number; indent?: number }[] = [];
+  // Nesting level of a list line, from its leading spaces (2 per level, tabs count as 2).
+  const indentOf = (raw: string) => Math.min(4, Math.floor((raw.match(/^[ \t]*/)?.[0].replace(/\t/g, "  ").length ?? 0) / 2));
   let currentTable: string[] | null = null;
   let currentCode: { language: string; lines: string[]; startIdx: number } | null = null;
   let currentMermaid: string[] | null = null;
@@ -166,7 +184,7 @@ export default function MarkdownRenderer({ content }: MarkdownRendererProps) {
         currentMermaid = null;
         // Process current line normally (don't skip it)
         if (tLine) {
-          blocks.push({ type: "line", content: tLine, isFirst: !firstElementSet, originalIndex: i });
+          blocks.push({ type: "line", content: tLine, isFirst: !firstElementSet, originalIndex: i, indent: indentOf(line) });
           firstElementSet = true;
         } else {
           blocks.push({ type: "empty" });
@@ -210,7 +228,7 @@ export default function MarkdownRenderer({ content }: MarkdownRendererProps) {
       }
 
       if (tLine) {
-        blocks.push({ type: "line", content: tLine, isFirst: !firstElementSet, originalIndex: i });
+        blocks.push({ type: "line", content: tLine, isFirst: !firstElementSet, originalIndex: i, indent: indentOf(line) });
         firstElementSet = true;
       } else {
         blocks.push({ type: "empty" });
@@ -242,40 +260,45 @@ export default function MarkdownRenderer({ content }: MarkdownRendererProps) {
 
   // 4. Helper to determine if a table row is just the structural markdown separator (e.g. |---|---|)
   const isTableSeparator = (line: string) => {
-    const chars = line.replace(/[\s\|]/g, '');
-    return chars.length > 0 && chars.split('').every(c => c === '-' || c === ':');
+    const chars = line.replace(/[\s\|]/g, "");
+    return chars.length > 0 && chars.split("").every((c) => c === "-" || c === ":");
   };
 
+  const cells = (row: string) => row.split("|").filter((_, idx, arr) => idx !== 0 && idx !== arr.length - 1);
+
   return (
-    <div style={{ fontFamily: T.font, width: "100%" }}>
+    <div className="w-full text-[14px] leading-[1.7] text-pm-fg/80">
       {blocks.map((block, i) => {
-        const isFirstElement = !!block.isFirst;
+        const first = !!block.isFirst;
 
         // ─── EMPTY LINES ───────────────────
         if (block.type === "empty") {
-          return <div key={i} style={{ height: "12px" }} />;
+          return <div key={i} className="h-2" />;
         }
 
-        // ─── CODE BLOCKS ────────
+        // ─── CODE BLOCKS ───────────────────
         if (block.type === "code") {
           const source = (block.lines || []).join("\n");
           if (block.language === "mermaid") {
             return <MermaidRenderer key={`mermaid-${i}`} source={source} />;
           }
+          // A file tree (├── / └──) reads better in the folder viewer than as raw text.
+          if ((block.language === "" || /^(text|txt|bash|sh|plaintext|tree|folder)$/i.test(block.language || "")) && /^[\s│|]*[├└][─-]/m.test(source)) {
+            return (
+              <div key={`tree-${i}`} className={first ? "mb-4" : "my-4"}>
+                <FolderStructureViewer content={source} />
+              </div>
+            );
+          }
           if (block.language === "json" && source.includes("erDiagram")) {
-            // Usually we hide raw JSON blocks if they are internal state, but if they want to see it:
             return null;
           }
           return (
-            <div key={`code-${i}`} style={{
-              margin: isFirstElement ? "0px 0 16px" : "16px 0",
-              background: T.surface,
-              border: `1px solid ${T.border}`,
-              borderRadius: "8px",
-              padding: "16px",
-              overflowX: "auto",
-            }}>
-              <pre style={{ margin: 0, fontFamily: T.mono, fontSize: "13px", color: T.text, lineHeight: "1.5" }}>
+            <div key={`code-${i}`} className={cn("overflow-hidden rounded-xl border border-pm-line bg-pm-code", first ? "mb-4" : "my-4")}>
+              {block.language && (
+                <div className="border-b border-pm-line px-4 py-1.5 font-mono text-[11px] text-pm-muted">{block.language}</div>
+              )}
+              <pre className="overflow-x-auto p-4 font-mono text-[12.5px] leading-relaxed text-pm-fg">
                 <code>{source}</code>
               </pre>
             </div>
@@ -284,30 +307,16 @@ export default function MarkdownRenderer({ content }: MarkdownRendererProps) {
 
         // ─── TABLES ────────────────────────
         if (block.type === "table" && block.lines) {
-          const rows = block.lines.filter(l => !isTableSeparator(l));
+          const rows = block.lines.filter((l) => !isTableSeparator(l));
           if (rows.length === 0) return null;
 
           return (
-            <div key={`table-${i}`} style={{
-              marginTop: isFirstElement ? "0px" : "16px",
-              marginBottom: "16px",
-              overflowX: "auto",
-              border: `1px solid ${T.border}`,
-              borderRadius: "8px",
-              background: T.bg
-            }}>
-              <table style={{ width: "100%", borderCollapse: "collapse", fontSize: "13px", textAlign: "left" }}>
+            <div key={`table-${i}`} className={cn("overflow-x-auto rounded-xl border border-pm-line", first ? "mb-4" : "my-4")}>
+              <table className="w-full border-collapse text-left text-[13px]">
                 <thead>
-                  <tr>
-                    {rows[0].split('|').filter((_, idx, arr) => idx !== 0 && idx !== arr.length - 1).map((cell, idx) => (
-                      <th key={idx} style={{
-                        padding: "12px 16px",
-                        background: T.surfaceHover,
-                        borderBottom: `1px solid ${T.border}`,
-                        color: T.accent,
-                        fontWeight: 500,
-                        fontFamily: T.font
-                      }}>
+                  <tr className="bg-pm-shell">
+                    {cells(rows[0]).map((cell, idx) => (
+                      <th key={idx} className="border-b border-pm-line px-4 py-2.5 text-xs font-semibold whitespace-nowrap text-pm-fg">
                         {renderInlineText(cell.trim())}
                       </th>
                     ))}
@@ -315,9 +324,9 @@ export default function MarkdownRenderer({ content }: MarkdownRendererProps) {
                 </thead>
                 <tbody>
                   {rows.slice(1).map((row, rIdx) => (
-                    <tr key={rIdx} style={{ borderBottom: rIdx === rows.length - 2 ? "none" : `1px solid ${T.borderHover}` }}>
-                      {row.split('|').filter((_, idx, arr) => idx !== 0 && idx !== arr.length - 1).map((cell, cIdx) => (
-                        <td key={cIdx} style={{ padding: "12px 16px", color: T.textMuted, lineHeight: "1.5" }}>
+                    <tr key={rIdx} className="border-b border-pm-line transition-colors last:border-0 hover:bg-pm-shell/50">
+                      {cells(row).map((cell, cIdx) => (
+                        <td key={cIdx} className={cn("px-4 py-2.5 align-top text-pm-fg/75", cIdx === 0 && "font-medium text-pm-fg")}>
                           {renderInlineText(cell.trim())}
                         </td>
                       ))}
@@ -330,215 +339,150 @@ export default function MarkdownRenderer({ content }: MarkdownRendererProps) {
         }
 
         const tLine = block.content!;
+        // Nested list items step in by 1.25rem per level.
+        const pad = block.indent ? { marginLeft: `${block.indent * 1.25}rem` } : undefined;
 
-        // ─── HORIZONTAL RULES ───────
+        // ─── HORIZONTAL RULES ──────────────
         if (tLine === "---" || tLine === "***" || tLine === "___") {
-          return <div key={i} style={{ height: "1px", background: T.borderHover, margin: "24px 0" }} />;
+          return <hr key={i} className="my-6 border-pm-line" />;
         }
 
-        // ─── H1 ────────────────────────────
+        // ─── HEADINGS ──────────────────────
         if (tLine.startsWith("# ")) {
           return (
-            <div
-              key={i}
-              style={{
-                color: T.accent,
-                fontSize: "20px",
-                fontWeight: 500,
-                marginTop: isFirstElement ? "0px" : "24px",
-                marginBottom: "16px",
-                letterSpacing: "-0.01em",
-              }}
-            >
+            <h1 key={i} className={cn("text-[22px] leading-tight font-semibold tracking-tight text-pm-fg", first ? "mb-4" : "mt-8 mb-4")}>
               {renderInlineText(tLine.substring(2))}
-            </div>
+            </h1>
           );
         }
-
-        // ─── H2 (Clean White Bullet) ───────
         if (tLine.startsWith("## ")) {
           return (
-            <div
+            <h2
               key={i}
-              style={{
-                display: "flex",
-                alignItems: "center",
-                gap: "10px",
-                marginTop: isFirstElement ? "0px" : "20px",
-                marginBottom: "12px",
-              }}
+              className={cn(
+                "text-[17px] font-semibold tracking-tight text-pm-fg",
+                first ? "mb-3" : "mt-7 mb-3 border-t border-pm-line pt-5",
+              )}
             >
-              <span style={{ width: "5px", height: "5px", borderRadius: "50%", background: T.accent, flexShrink: 0 }} />
-              <span
-                style={{
-                  color: T.text,
-                  fontSize: "16px",
-                  fontWeight: 500,
-                }}
-              >
-                {renderInlineText(tLine.substring(3))}
-              </span>
-            </div>
+              {renderInlineText(tLine.substring(3))}
+            </h2>
           );
         }
-
-        // ─── H3 (Italic with Muted Bullet) ─
         if (tLine.startsWith("### ")) {
           return (
-            <div
-              key={i}
-              style={{
-                display: "flex",
-                alignItems: "center",
-                gap: "8px",
-                marginTop: isFirstElement ? "0px" : "16px",
-                marginBottom: "8px",
-              }}
-            >
-              <span style={{ width: "4px", height: "4px", borderRadius: "50%", background: T.textHint, flexShrink: 0 }} />
-              <span
-                style={{
-                  color: T.textMuted,
-                  fontSize: "13px",
-                  fontWeight: 500,
-                  fontStyle: "italic",
-                  textTransform: "uppercase",
-                  letterSpacing: "0.04em",
-                }}
-              >
-                {renderInlineText(tLine.substring(4))}
-              </span>
-            </div>
+            <h3 key={i} className={cn("text-[14.5px] font-semibold text-pm-fg", first ? "mb-2" : "mt-5 mb-2")}>
+              {renderInlineText(tLine.substring(4))}
+            </h3>
           );
         }
-
-        // ─── API SPECIFIC HEADER (####) ────
         if (tLine.startsWith("#### ")) {
           return (
-            <div
-              key={i}
-              style={{
-                color: T.textHint,
-                fontSize: "11px",
-                fontWeight: 600,
-                marginTop: isFirstElement ? "0px" : "12px",
-                marginBottom: "6px",
-                textTransform: "uppercase",
-                letterSpacing: "0.06em",
-              }}
-            >
+            <h4 key={i} className={cn("text-[11px] font-semibold tracking-wider text-pm-muted uppercase", first ? "mb-1.5" : "mt-4 mb-1.5")}>
               {renderInlineText(tLine.substring(5))}
+            </h4>
+          );
+        }
+
+        if (/^#{5,6}\s/.test(tLine)) {
+          return (
+            <h5 key={i} className={cn("text-[13px] font-semibold text-pm-fg/90", first ? "mb-1.5" : "mt-3 mb-1.5")}>
+              {renderInlineText(tLine.replace(/^#{5,6}\s+/, ""))}
+            </h5>
+          );
+        }
+        // A line that is only bold text ("**Goals**" or "**Goals:**") reads as a small heading.
+        const boldOnly = tLine.match(/^\*\*([^*]+?)\*\*:?$/);
+        if (boldOnly) {
+          return (
+            <h4 key={i} className={cn("text-[14px] font-semibold text-pm-fg", first ? "mb-1.5" : "mt-4 mb-1.5")}>
+              {boldOnly[1].replace(/:$/, "")}
+            </h4>
+          );
+        }
+
+        // ─── BLOCKQUOTES & CALLOUTS ────────
+        if (tLine.startsWith("> ") || tLine === ">") {
+          const text = tLine.substring(2);
+          const warn = /^\*{0,2}(warning|caution|risk|important)\b/i.test(text);
+          const note = /^\*{0,2}(note|tip|info)\b/i.test(text);
+          const Icon = warn ? TriangleAlert : Info;
+          return (
+            <div
+              key={i}
+              className={cn(
+                "my-3 flex gap-2.5 rounded-xl border px-3.5 py-2.5 text-[13px]",
+                warn ? "border-pm-amber/30 bg-pm-amber/[0.07]" : note ? "border-pm-blue/25 bg-pm-blue/[0.06]" : "border-pm-line bg-pm-shell/60",
+              )}
+            >
+              {(warn || note) && <Icon className={cn("mt-0.5 size-4 shrink-0", warn ? "text-pm-amber" : "text-pm-blue")} />}
+              <div className="text-pm-fg/80">{renderInlineText(text)}</div>
             </div>
           );
         }
 
-        // ─── BLOCKQUOTE ────────────────────
-        if (tLine.startsWith("> ")) {
+        // ─── CHECKLISTS ────────────────────
+        const task = tLine.match(/^[-*]\s+\[( |x|X)\]\s+(.*)$/);
+        if (task) {
+          const done = task[1].toLowerCase() === "x";
           return (
-            <div
-              key={i}
-              style={{
-                padding: "8px 14px",
-                borderLeft: `2px solid ${T.borderHover}`,
-                background: T.surfaceHover,
-                color: T.textMuted,
-                fontStyle: "italic",
-                marginTop: isFirstElement ? "0px" : "8px",
-                marginBottom: "12px",
-                fontSize: "13px",
-                lineHeight: "1.6",
-                borderRadius: "0 6px 6px 0",
-              }}
-            >
-              {renderInlineText(tLine.substring(2))}
-            </div>
-          );
-        }
-
-        // ─── BULLET LIST (White Bullets) ───
-        if (tLine.startsWith("- ") || tLine.startsWith("* ")) {
-          return (
-            <div
-              key={i}
-              style={{
-                color: T.text,
-                marginLeft: "4px",
-                marginBottom: "8px",
-                display: "flex",
-                alignItems: "flex-start",
-                gap: "12px",
-                lineHeight: "1.65",
-                fontSize: "13px",
-              }}
-            >
+            <div key={i} className="mb-1.5 flex items-start gap-2.5" style={pad}>
               <span
-                style={{
-                  marginTop: "8px",
-                  display: "inline-block",
-                  width: "4px",
-                  height: "4px",
-                  borderRadius: "50%",
-                  background: T.accent, // Pure white bullet
-                  flexShrink: 0,
-                }}
-              />
-              <div style={{ color: "rgba(255,255,255,0.8)" }}>{renderInlineText(tLine.substring(2))}</div>
+                className={cn(
+                  "mt-[3px] grid size-4 shrink-0 place-items-center rounded-[5px] border",
+                  done ? "border-pm-primary bg-pm-primary text-white" : "border-pm-line-strong",
+                )}
+              >
+                {done && <Check className="size-3" strokeWidth={3} />}
+              </span>
+              <span className={cn(done && "text-pm-muted line-through")}>{renderInlineText(task[2])}</span>
+            </div>
+          );
+        }
+
+        // ─── BULLET LIST ───────────────────
+        if (tLine.startsWith("- ") || tLine.startsWith("* ") || tLine.startsWith("• ")) {
+          return (
+            <div key={i} className="mb-1.5 flex items-start gap-3 pl-1" style={pad}>
+              <span className={cn("mt-[9px] size-1.5 shrink-0 rounded-full", block.indent ? "border border-pm-primary/70" : "bg-pm-primary/70")} />
+              <div>{renderInlineText(tLine.substring(2))}</div>
             </div>
           );
         }
 
         // ─── NUMBERED LIST ─────────────────
-        if (/^\d+\./.test(tLine)) {
+        if (/^\d+\.\s/.test(tLine)) {
           const dotIdx = tLine.indexOf(".");
           return (
-            <div
-              key={i}
-              style={{
-                color: T.text,
-                marginLeft: "4px",
-                marginBottom: "8px",
-                display: "flex",
-                alignItems: "flex-start",
-                gap: "10px",
-                lineHeight: "1.65",
-                fontSize: "13px",
-              }}
-            >
-              <span
-                style={{
-                  color: T.textMuted,
-                  fontSize: "12px",
-                  fontWeight: 600,
-                  marginTop: "1px",
-                  flexShrink: 0,
-                }}
-              >
-                {tLine.substring(0, dotIdx)}.
+            <div key={i} className="mb-1.5 flex items-start gap-2.5" style={pad}>
+              <span className="mt-0.5 grid h-5 min-w-5 shrink-0 place-items-center rounded-md bg-pm-shell px-1 text-[11px] font-semibold text-pm-fg/70 tabular-nums">
+                {tLine.substring(0, dotIdx)}
               </span>
-              <div style={{ color: "rgba(255,255,255,0.8)" }}>{renderInlineText(tLine.substring(dotIdx + 1).trim())}</div>
+              <div>{renderInlineText(tLine.substring(dotIdx + 1).trim())}</div>
             </div>
           );
         }
 
-        // ─── CODE BLOCK HIDER ──────────────
+        // ─── STRAY CODE FENCES ─────────────
         if (tLine.startsWith("```")) {
           return null;
         }
 
-        // ─── STANDARD PARAGRAPHS ────────────
+        // ─── "Label: value" LINES ──────────
+        const kv = tLine.match(/^\*\*([^*]{1,40}?):?\*\*:?\s+(.+)$/);
+        if (kv) {
+          return (
+            <div key={i} className="mb-2 flex flex-wrap gap-x-2" style={pad}>
+              <span className="font-semibold text-pm-fg">{kv[1].replace(/:$/, "")}:</span>
+              <span>{renderInlineText(kv[2])}</span>
+            </div>
+          );
+        }
+
+        // ─── PARAGRAPHS ────────────────────
         return (
-          <div
-            key={i}
-            style={{
-              color: "rgba(255,255,255,0.75)",
-              marginTop: isFirstElement ? "0px" : "0px",
-              marginBottom: "12px",
-              lineHeight: "1.65",
-              fontSize: "13px",
-            }}
-          >
+          <p key={i} className="mb-3 text-pretty" style={pad}>
             {renderInlineText(tLine)}
-          </div>
+          </p>
         );
       })}
     </div>

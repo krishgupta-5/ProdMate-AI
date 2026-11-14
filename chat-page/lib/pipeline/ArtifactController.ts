@@ -164,9 +164,11 @@ export async function generateTitle(
   prompt: string,
   fallbackApiKey: string,
 ): Promise<string | undefined> {
+  // The default model reasons before answering, and the reasoning counts against max_tokens.
+  // With the old limit of 15 it ran out before writing the title, so every title came back empty.
   const config = createCallConfig(
     getApiKey('config', fallbackApiKey),
-    15,
+    256,
     0.1,
   );
   const messages = buildTitlePromptMessages(prompt);

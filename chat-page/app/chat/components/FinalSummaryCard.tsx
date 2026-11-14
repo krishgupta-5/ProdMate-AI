@@ -1,21 +1,10 @@
 import React, { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { ProgressEvent } from "@/lib/pipeline/types";
+import { ArrowUpRight, CircleCheck, LoaderCircle, PartyPopper, RefreshCw, TriangleAlert } from "lucide-react";
+import { IconBrandGithub, IconBrandJira, IconBrandNotion } from "@tabler/icons-react";
+import { cn } from "@/lib/cn";
 
-const T = {
-  bg: "#09090b",
-  surface: "#121214",
-  surfaceHover: "#18181b",
-  border: "#27272a",
-  borderHover: "#3f3f46",
-  text: "#ededed",
-  textMuted: "#a1a1aa",
-  textHint: "#71717a",
-  accent: "#ffffff",
-  font: "var(--font-satoshi), system-ui, -apple-system, sans-serif",
-  success: "#10b981",
-  failed: "#ef4444",
-};
 
 interface Props {
   events: ProgressEvent[];
@@ -46,9 +35,6 @@ export default function FinalSummaryCard({ events, githubUrl, notionUrl, jiraUrl
     jira: jiraUrl
   });
 
-  const [showGmailModal, setShowGmailModal] = useState(false);
-  const [gmailRecipient, setGmailRecipient] = useState("");
-  const [gmailTemplate, setGmailTemplate] = useState("proposal");
 
   const [syncStates, setSyncStates] = useState<any>({});
   
@@ -122,7 +108,6 @@ export default function FinalSummaryCard({ events, githubUrl, notionUrl, jiraUrl
           calendar: platform === 'calendar' ? data.calendarUrl : prev.calendar,
           gmail: platform === 'gmail' ? data.draftUrl : prev.gmail,
         }));
-        if (platform === 'gmail') setShowGmailModal(false);
         // Refresh sync states
         loadData();
       } else {
@@ -148,179 +133,116 @@ export default function FinalSummaryCard({ events, githubUrl, notionUrl, jiraUrl
     }
   };
 
-  const renderOptionButton = (platform: 'github' | 'jira' | 'notion' | 'calendar' | 'gmail', label: string, isIntegrated: boolean) => {
-    if (!isIntegrated) {
-      return (
-        <button onClick={() => handleAction(platform)}
-          style={{
-            padding: "6px 12px", background: "transparent", border: `1px solid ${T.borderHover}`, color: T.textMuted,
-            fontSize: "12px", fontFamily: T.font, cursor: "pointer", transition: "all .15s", borderRadius: "6px"
-          }}
-          onMouseEnter={e => { e.currentTarget.style.color = T.text; e.currentTarget.style.borderColor = T.textHint; }}
-          onMouseLeave={e => { e.currentTarget.style.color = T.textMuted; e.currentTarget.style.borderColor = T.borderHover; }}>
-          Connect {label}
+  const PLATFORMS = [
+    { id: "github" as const, label: "GitHub", desc: "Repository with docs and folder structure", Icon: IconBrandGithub },
+    { id: "jira" as const, label: "Jira", desc: "Epics and tickets from your user stories", Icon: IconBrandJira },
+    { id: "notion" as const, label: "Notion", desc: "Every document as a Notion page", Icon: IconBrandNotion },
+  ];
+
+  const anyLoading = Object.values(loading).some(Boolean);
+  const anyDirty =
+    (syncStates.githubDirty && integrationData.github) ||
+    (syncStates.jiraDirty && integrationData.jira) ||
+    (syncStates.notionDirty && integrationData.notion);
+
+  const renderTile = ({ id, label, desc, Icon }: (typeof PLATFORMS)[number]) => {
+    const connected = integrationData[id];
+    const isExported = syncStates[`${id}Exported`];
+    const isDirty = syncStates[`${id}Dirty`];
+    const dirtyArtifacts: string[] = syncStates[`${id}DirtyArtifacts`] || [];
+    const url = urls[id];
+    const busy = loading[id];
+
+    let status: React.ReactNode;
+    let action: React.ReactNode;
+
+    if (!connected) {
+      status = <span className="text-pm-muted">Not connected</span>;
+      action = (
+        <button type="button" onClick={() => handleAction(id)} className={btn("outline")}>
+          Connect
+        </button>
+      );
+    } else if (isExported && isDirty) {
+      status = (
+        <span className="flex items-center gap-1 text-pm-amber" title={dirtyArtifacts.length ? `Changed: ${dirtyArtifacts.join(", ")}` : undefined}>
+          <TriangleAlert className="size-3" />
+          {dirtyArtifacts.length || "Some"} {dirtyArtifacts.length === 1 ? "change" : "changes"} to sync
+        </span>
+      );
+      action = (
+        <button type="button" onClick={() => handleAction(id)} disabled={busy} className={btn("primary")}>
+          {busy ? <LoaderCircle className="size-3.5 animate-spin" /> : <RefreshCw className="size-3.5" />}
+          {busy ? "Updating" : "Update"}
+        </button>
+      );
+    } else if (isExported) {
+      status = (
+        <span className="flex items-center gap-1 text-pm-green">
+          <CircleCheck className="size-3" />
+          Synced
+        </span>
+      );
+      action = url ? (
+        <a href={url} target="_blank" rel="noopener noreferrer" className={btn("outline")}>
+          Open
+          <ArrowUpRight className="size-3.5" />
+        </a>
+      ) : null;
+    } else {
+      status = <span className="text-pm-muted">Ready to export</span>;
+      action = (
+        <button type="button" onClick={() => handleAction(id)} disabled={busy} className={btn("dark")}>
+          {busy && <LoaderCircle className="size-3.5 animate-spin" />}
+          {busy ? "Exporting" : "Export"}
         </button>
       );
     }
 
-    const isExported = syncStates[`${platform}Exported`];
-    const isDirty = syncStates[`${platform}Dirty`];
-    const dirtyArtifacts = syncStates[`${platform}DirtyArtifacts`] || [];
-    const url = urls[platform];
-
-    if (isExported) {
-      if (isDirty) {
-        return (
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
-            <button onClick={() => handleAction(platform)} disabled={loading[platform]}
-              style={{
-                padding: "6px 12px", background: "rgba(239, 68, 68, 0.1)", border: `1px solid rgba(239, 68, 68, 0.3)`, color: "#fca5a5",
-                fontSize: "12px", fontFamily: T.font, cursor: loading[platform] ? "not-allowed" : "pointer", transition: "all .15s", borderRadius: "6px",
-                opacity: loading[platform] ? 0.5 : 1
-              }}
-              onMouseEnter={e => { if (!loading[platform]) { e.currentTarget.style.background = "rgba(239, 68, 68, 0.2)"; } }}
-              onMouseLeave={e => { if (!loading[platform]) { e.currentTarget.style.background = "rgba(239, 68, 68, 0.1)"; } }}>
-              {loading[platform] ? "Updating..." : `⚠ Update ${label}`}
-            </button>
-            <span 
-              title={dirtyArtifacts.length > 0 ? `Changed: ${dirtyArtifacts.join(', ')}` : ''}
-              style={{ fontSize: '10px', color: T.textHint, textAlign: 'center', cursor: 'help' }}
-            >
-              {dirtyArtifacts.length} out of sync
-            </span>
-          </div>
-        );
-      } else {
-        return (
-          <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-            <span style={{ fontSize: '12px', color: T.success, display: 'flex', alignItems: 'center', gap: '4px', padding: "6px 12px", background: "rgba(16, 185, 129, 0.1)", borderRadius: "6px", border: "1px solid rgba(16, 185, 129, 0.2)" }}>
-              ✓ {label} Synced
-            </span>
-            {url && (
-              <a href={url} target="_blank" rel="noopener noreferrer" style={{ color: T.textMuted, fontSize: '12px', textDecoration: 'none' }}
-                onMouseEnter={e => e.currentTarget.style.color = T.text} onMouseLeave={e => e.currentTarget.style.color = T.textMuted}>
-                ↗
-              </a>
-            )}
-          </div>
-        );
-      }
-    }
-
     return (
-      <button onClick={() => handleAction(platform)} disabled={loading[platform]}
-        style={{
-          padding: "6px 12px", background: T.text, color: T.bg, border: `1px solid ${T.text}`,
-          fontSize: "12px", fontFamily: T.font, cursor: loading[platform] ? "not-allowed" : "pointer", transition: "all .15s", borderRadius: "6px",
-          opacity: loading[platform] ? 0.5 : 1
-        }}
-        onMouseEnter={e => { if (!loading[platform]) e.currentTarget.style.opacity = "0.85"; }}
-        onMouseLeave={e => { if (!loading[platform]) e.currentTarget.style.opacity = "1"; }}>
-        {loading[platform] ? "..." : `Export to ${label}`}
-      </button>
-    );
-  };
-
-  const renderGmailModal = () => {
-    if (!showGmailModal) return null;
-    return (
-      <div style={{
-        position: "fixed", top: 0, left: 0, right: 0, bottom: 0, zIndex: 9999,
-        background: "rgba(0,0,0,0.6)", backdropFilter: "blur(4px)",
-        display: "flex", alignItems: "center", justifyContent: "center",
-        animation: "fadeIn 0.2s ease-out"
-      }}>
-        <div style={{
-          background: T.bg, border: `1px solid ${T.border}`, borderRadius: "16px",
-          width: "400px", maxWidth: "90vw", padding: "24px",
-          boxShadow: "0 20px 40px rgba(0,0,0,0.5)", position: "relative",
-          fontFamily: T.font
-        }}>
-          <button
-            onClick={() => setShowGmailModal(false)}
-            style={{ position: "absolute", top: "16px", right: "16px", background: "transparent", border: "none", color: T.textMuted, cursor: "pointer" }}
-          >
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
-          </button>
-          <h3 style={{ margin: "0 0 16px 0", color: T.text, fontSize: "16px", fontWeight: 600 }}>Create Email Draft</h3>
-
-          <div style={{ marginBottom: "16px" }}>
-            <label style={{ display: "block", fontSize: "13px", color: T.textMuted, marginBottom: "8px" }}>Recipient Email</label>
-            <input
-              type="email"
-              value={gmailRecipient}
-              onChange={(e) => setGmailRecipient(e.target.value)}
-              placeholder="team@example.com"
-              style={{
-                width: "100%", padding: "10px 12px", borderRadius: "8px", border: `1px solid ${T.borderHover}`,
-                background: T.surface, color: T.text, fontSize: "14px", outline: "none", boxSizing: "border-box"
-              }}
-            />
+      <div key={id} className="flex flex-col rounded-xl border border-pm-line bg-pm-card p-3.5">
+        <div className="flex items-center gap-2.5">
+          <span className="grid size-8 shrink-0 place-items-center rounded-lg bg-pm-shell text-pm-fg">
+            <Icon size={17} stroke={1.75} />
+          </span>
+          <div className="min-w-0">
+            <div className="text-sm font-semibold text-pm-fg">{label}</div>
+            <div className="text-[11.5px]">{status}</div>
           </div>
-
-          <div style={{ marginBottom: "24px" }}>
-            <label style={{ display: "block", fontSize: "13px", color: T.textMuted, marginBottom: "8px" }}>Template</label>
-            <select
-              value={gmailTemplate}
-              onChange={(e) => setGmailTemplate(e.target.value)}
-              style={{
-                width: "100%", padding: "10px 12px", borderRadius: "8px", border: `1px solid ${T.borderHover}`,
-                background: T.surface, color: T.text, fontSize: "14px", outline: "none", boxSizing: "border-box"
-              }}
-            >
-              <option value="proposal">Project Proposal</option>
-              <option value="weekly">Weekly Progress Report</option>
-              <option value="delivery">Project Delivery</option>
-            </select>
-          </div>
-
-          <button
-            onClick={() => handleAction("gmail", { recipient: gmailRecipient, template: gmailTemplate })}
-            disabled={loading.gmail || !gmailRecipient}
-            style={{
-              width: "100%", padding: "10px", background: T.text, color: T.bg, border: "none", borderRadius: "8px",
-              fontSize: "14px", fontWeight: 600, cursor: loading.gmail || !gmailRecipient ? "not-allowed" : "pointer",
-              opacity: loading.gmail || !gmailRecipient ? 0.5 : 1
-            }}
-          >
-            {loading.gmail ? "Creating Draft..." : "Create Draft"}
-          </button>
         </div>
+        <p className="mt-2.5 flex-1 text-xs leading-relaxed text-pm-muted">{desc}</p>
+        <div className="mt-3">{action}</div>
       </div>
     );
   };
 
   return (
-    <>
-      {renderGmailModal()}
-      <div style={{
-        display: "flex", flexDirection: "column", gap: "12px", margin: "16px auto 0",
-        fontFamily: T.font, width: "fit-content", padding: "16px 24px", background: "rgba(255,255,255,0.02)",
-        border: `1px solid rgba(255,255,255,0.05)`, borderRadius: "12px"
-      }}>
-        <div style={{ display: "flex", gap: "8px", flexWrap: "wrap", alignItems: "center", justifyContent: "center" }}>
-          <div style={{ fontSize: "13px", color: "rgba(255,255,255,0.8)", fontWeight: 500, marginRight: "8px" }}>
-            Ready to Export
-          </div>
-          {renderOptionButton('github', 'GitHub', integrationData.github)}
-          {renderOptionButton('jira', 'Jira', integrationData.jira)}
-          {renderOptionButton('notion', 'Notion', integrationData.notion)}
-          
-          {(syncStates.githubDirty || syncStates.jiraDirty || syncStates.notionDirty) && (
-            <button onClick={handleUpdateAll} disabled={Object.values(loading).some(Boolean)}
-              style={{
-                marginLeft: "8px", padding: "6px 12px", background: T.accent, color: T.bg, border: `1px solid ${T.accent}`,
-                fontSize: "12px", fontFamily: T.font, cursor: Object.values(loading).some(Boolean) ? "not-allowed" : "pointer", transition: "all .15s", borderRadius: "6px",
-                opacity: Object.values(loading).some(Boolean) ? 0.5 : 1, fontWeight: 600
-              }}
-              onMouseEnter={e => { if (!Object.values(loading).some(Boolean)) e.currentTarget.style.opacity = "0.85"; }}
-              onMouseLeave={e => { if (!Object.values(loading).some(Boolean)) e.currentTarget.style.opacity = "1"; }}>
-              {Object.values(loading).some(Boolean) ? "Updating..." : "Update All"}
-            </button>
-          )}
+    <div className="mt-4 overflow-hidden rounded-2xl border border-pm-primary/25 bg-gradient-to-b from-pm-primary/[0.06] to-transparent">
+      <div className="flex flex-wrap items-center gap-3 px-4 pt-4">
+        <span className="grid size-9 shrink-0 place-items-center rounded-xl bg-pm-primary text-white">
+          <PartyPopper className="size-4" />
+        </span>
+        <div className="min-w-0 flex-1">
+          <div className="text-[15px] font-semibold tracking-tight text-pm-fg">Your plan is ready</div>
+          <div className="text-xs text-pm-muted">Send it to your tools, or keep refining it in the chat.</div>
         </div>
-
+        {anyDirty && (
+          <button type="button" onClick={handleUpdateAll} disabled={anyLoading} className={btn("primary")}>
+            {anyLoading ? <LoaderCircle className="size-3.5 animate-spin" /> : <RefreshCw className="size-3.5" />}
+            {anyLoading ? "Updating" : "Update all"}
+          </button>
+        )}
       </div>
-    </>
+      <div className="grid gap-2.5 p-4 sm:grid-cols-3">{PLATFORMS.map(renderTile)}</div>
+    </div>
+  );
+}
+
+function btn(kind: "primary" | "dark" | "outline") {
+  return cn(
+    "inline-flex h-8 w-full items-center justify-center gap-1.5 rounded-full px-3 text-xs font-medium transition-[background-color,border-color,opacity] disabled:opacity-60",
+    kind === "primary" && "bg-pm-primary text-white hover:bg-pm-primary/85",
+    kind === "dark" && "bg-pm-fg text-pm-bg hover:bg-pm-fg/85",
+    kind === "outline" && "border border-pm-line bg-pm-card text-pm-fg hover:border-pm-line-strong",
   );
 }

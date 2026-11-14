@@ -3,6 +3,7 @@ import { auth } from '@clerk/nextjs/server';
 import { getFullUserData } from '@/lib/auth';
 import { createOrUpdateUser, db } from '@/lib/firebase-admin';
 import { getOrCreateQuota, deductTokens } from '@/lib/token-quota';
+import { artifactLabel } from '@/lib/artifact-labels';
 
 import { loadProjectState, saveAssistantMessage, saveUserMessage, saveSessionMetadata, saveEvent } from '@/lib/pipeline/FirestoreService';
 import { buildConversationalContext } from '@/lib/chat/ContextManager';
@@ -104,6 +105,8 @@ export async function POST(req: Request) {
 
       const data = await response.json();
       const assistantReply = data.choices[0].message.content;
+      const chatTokens = data.usage?.total_tokens ?? 0;
+      if (chatTokens > 0) await deductTokens(userId, chatTokens);
 
       await saveAssistantMessage(sessionId, userId, assistantReply);
       
@@ -175,6 +178,7 @@ Format:
       }
 
       const rawOutput = res.content;
+      if (res.usage?.totalTokens) await deductTokens(userId, res.usage.totalTokens);
 
       let parsed: any;
       try {
@@ -304,7 +308,7 @@ Format:
         await deductTokens(userId, tokensUsed);
       }
 
-      let summaryReply = `I have successfully modified the following artifacts based on your request:\n- ${modifiedArtifacts.join('\n- ')}\n\n${impact.reasonForChange}`;
+      let summaryReply = `I updated these based on your request:\n- ${modifiedArtifacts.map(artifactLabel).join('\n- ')}\n\n${impact.reasonForChange}`;
       
       if (failedArtifacts.length > 0) {
         summaryReply += `\n\nHowever, I encountered errors modifying the following:\n${failedArtifacts.map(f => `- ${f.type}: ${f.error}`).join('\n')}`;

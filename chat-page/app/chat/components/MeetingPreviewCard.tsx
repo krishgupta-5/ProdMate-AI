@@ -5,19 +5,7 @@ import type { MeetingPreview } from "@/lib/pipeline/types";
 import DatePicker from "react-datepicker";
 import "react-datepicker/dist/react-datepicker.css";
 
-// Design Tokens (Onyx Minimal Palette)
-const T = {
-  bg: "#09090b",
-  surface: "#121214",
-  surfaceHover: "#18181b",
-  border: "#27272a",
-  borderHover: "#3f3f46",
-  text: "#ededed",
-  textMuted: "#a1a1aa",
-  textHint: "#71717a",
-  accent: "#ffffff",
-  font: "var(--font-satoshi), system-ui, -apple-system, sans-serif",
-};
+import { T } from "./tokens";
 
 interface MeetingPreviewCardProps {
   meeting: MeetingPreview;
@@ -62,7 +50,7 @@ export default function MeetingPreviewCard({ meeting, onSchedule, onCancel, onRe
         animation: "fadeIn 0.3s ease-in-out"
       }}>
         <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
-          <div style={{ background: "rgba(161, 161, 170, 0.1)", color: T.textMuted, borderRadius: "50%", width: "24px", height: "24px", display: "flex", alignItems: "center", justifyContent: "center" }}>
+          <div style={{ background: T.surface, color: T.textMuted, borderRadius: "50%", width: "24px", height: "24px", display: "flex", alignItems: "center", justifyContent: "center" }}>
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
           </div>
           <span style={{ fontWeight: 600, fontSize: "15px", color: T.textMuted }}>Meeting Draft Cancelled</span>
@@ -80,10 +68,10 @@ export default function MeetingPreviewCard({ meeting, onSchedule, onCancel, onRe
         animation: "fadeIn 0.3s ease-in-out"
       }}>
         <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
-          <div style={{ background: "rgba(16, 185, 129, 0.1)", color: "#10b981", borderRadius: "50%", width: "24px", height: "24px", display: "flex", alignItems: "center", justifyContent: "center" }}>
+          <div style={{ background: "color-mix(in oklch, var(--pm-green) 12%, transparent)", color: "var(--pm-green)", borderRadius: "50%", width: "24px", height: "24px", display: "flex", alignItems: "center", justifyContent: "center" }}>
             ✓
           </div>
-          <span style={{ fontWeight: 600, fontSize: "15px", color: "#10b981" }}>Meeting Scheduled Successfully</span>
+          <span style={{ fontWeight: 600, fontSize: "15px", color: "var(--pm-green)" }}>Meeting Scheduled Successfully</span>
         </div>
         
         <div style={{ display: "grid", gridTemplateColumns: "80px 1fr", gap: "8px", fontSize: "14px", marginTop: "8px" }}>
@@ -107,9 +95,9 @@ export default function MeetingPreviewCard({ meeting, onSchedule, onCancel, onRe
           {meeting.meetLink && (
             <a href={meeting.meetLink} target="_blank" rel="noopener noreferrer" style={{ textDecoration: "none" }}>
               <button style={{
-                padding: "8px 16px", background: "#3b82f6", color: "#ffffff", border: `1px solid #2563eb`,
+                padding: "8px 16px", background: T.accent, color: "var(--pm-primary-fg)", border: `1px solid ${T.accent}`,
                 borderRadius: "6px", fontSize: "13px", fontWeight: 500, cursor: "pointer", transition: "all 0.2s"
-              }} onMouseEnter={e => e.currentTarget.style.background = "#2563eb"} onMouseLeave={e => e.currentTarget.style.background = "#3b82f6"}>
+              }} onMouseEnter={e => e.currentTarget.style.opacity = "0.85"} onMouseLeave={e => e.currentTarget.style.opacity = "1"}>
                 Join Meet
               </button>
             </a>
@@ -136,11 +124,11 @@ export default function MeetingPreviewCard({ meeting, onSchedule, onCancel, onRe
               <button key={action}
                 onClick={() => onRefine(action, meeting)}
                 style={{
-                  padding: "4px 10px", background: "rgba(255,255,255,0.03)", border: `1px solid ${T.borderHover}`,
+                  padding: "4px 10px", background: T.card, border: `1px solid ${T.borderHover}`,
                   borderRadius: "12px", fontSize: "12px", color: T.textMuted, cursor: "pointer", transition: "all 0.2s"
                 }}
-                onMouseEnter={e => { e.currentTarget.style.color = T.accent; e.currentTarget.style.borderColor = T.textMuted; e.currentTarget.style.background = "rgba(255,255,255,0.08)"; }}
-                onMouseLeave={e => { e.currentTarget.style.color = T.textMuted; e.currentTarget.style.borderColor = T.borderHover; e.currentTarget.style.background = "rgba(255,255,255,0.03)"; }}
+                onMouseEnter={e => { e.currentTarget.style.color = T.accent; e.currentTarget.style.borderColor = T.textMuted; e.currentTarget.style.background = T.surface; }}
+                onMouseLeave={e => { e.currentTarget.style.color = T.textMuted; e.currentTarget.style.borderColor = T.borderHover; e.currentTarget.style.background = T.card; }}
               >
                 {action}
               </button>
@@ -164,22 +152,22 @@ export default function MeetingPreviewCard({ meeting, onSchedule, onCancel, onRe
         @keyframes fadeIn { from { opacity: 0; transform: translateY(5px); } to { opacity: 1; transform: translateY(0); } }
         @keyframes spin { 100% { transform: rotate(360deg); } }
         .custom-datepicker {
-          background: rgba(255, 255, 255, 0.03);
-          border: 1px solid rgba(255, 255, 255, 0.1) !important;
+          background: var(--pm-card);
+          border: 1px solid var(--pm-line) !important;
           color: ${T.text};
           outline: none !important;
           padding: 6px 10px;
           font-size: 14px;
           font-family: ${T.font};
           border-radius: 8px;
-          box-shadow: inset 0 1px 2px rgba(0,0,0,0.2);
+          box-shadow: none;
           transition: all 0.2s ease;
           width: 110px;
           box-sizing: border-box !important;
           margin: 0;
         }
         .custom-datepicker:focus {
-          border-color: rgba(255, 255, 255, 0.3) !important;
+          border-color: var(--pm-primary) !important;
         }
         .react-datepicker {
           background-color: ${T.surfaceHover} !important;
@@ -310,7 +298,7 @@ export default function MeetingPreviewCard({ meeting, onSchedule, onCancel, onRe
         />
       </div>
 
-      <div style={{ marginTop: "8px", padding: "16px", background: "rgba(255,255,255,0.02)", border: `1px solid ${T.border}`, borderRadius: "8px", display: "flex", flexDirection: "column", gap: "12px" }}>
+      <div style={{ marginTop: "8px", padding: "16px", background: T.surface, border: `1px solid ${T.border}`, borderRadius: "8px", display: "flex", flexDirection: "column", gap: "12px" }}>
         <div>
           <div style={{ fontWeight: 500, color: T.text, marginBottom: "4px", fontSize: "13px" }}>Agenda:</div>
           <textarea
@@ -361,7 +349,7 @@ export default function MeetingPreviewCard({ meeting, onSchedule, onCancel, onRe
               }}
             >
               {isSchedulingOrScheduled && (
-                <div style={{ width: "14px", height: "14px", border: "2px solid rgba(0,0,0,0.2)", borderTopColor: "#000", borderRadius: "50%", animation: "spin 1s linear infinite" }} />
+                <div style={{ width: "14px", height: "14px", border: "2px solid color-mix(in oklch, currentColor 25%, transparent)", borderTopColor: "currentColor", borderRadius: "50%", animation: "spin 1s linear infinite" }} />
               )}
               {isSchedulingOrScheduled ? "Scheduling..." : "Approve & Schedule"}
             </button>

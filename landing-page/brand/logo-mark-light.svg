@@ -1,0 +1,10 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="2 2 96 96">
+  <path d="M40 8.5 43.5 5 47 8.5V20H53V8.5L56.5 5 60 8.5V24L55 29H45L40 24Z" fill="#8B7CF6"/>
+  <path d="M40 8.5 43.5 5 47 8.5V20H53V8.5L56.5 5 60 8.5V24L55 29H45L40 24Z" transform="rotate(45 50 50)" fill="#F4F4F0"/>
+  <path d="M40 8.5 43.5 5 47 8.5V20H53V8.5L56.5 5 60 8.5V24L55 29H45L40 24Z" transform="rotate(90 50 50)" fill="#F4F4F0"/>
+  <path d="M40 8.5 43.5 5 47 8.5V20H53V8.5L56.5 5 60 8.5V24L55 29H45L40 24Z" transform="rotate(135 50 50)" fill="#F4F4F0"/>
+  <path d="M40 8.5 43.5 5 47 8.5V20H53V8.5L56.5 5 60 8.5V24L55 29H45L40 24Z" transform="rotate(180 50 50)" fill="#F4F4F0"/>
+  <path d="M40 8.5 43.5 5 47 8.5V20H53V8.5L56.5 5 60 8.5V24L55 29H45L40 24Z" transform="rotate(225 50 50)" fill="#F4F4F0"/>
+  <path d="M40 8.5 43.5 5 47 8.5V20H53V8.5L56.5 5 60 8.5V24L55 29H45L40 24Z" transform="rotate(270 50 50)" fill="#F4F4F0"/>
+  <path d="M40 8.5 43.5 5 47 8.5V20H53V8.5L56.5 5 60 8.5V24L55 29H45L40 24Z" transform="rotate(315 50 50)" fill="#F4F4F0"/>
+</svg>

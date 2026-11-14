@@ -3,19 +3,7 @@
 import React, { useState, useEffect } from "react";
 import type { EmailPreview } from "@/lib/pipeline/types";
 
-// Design Tokens (Onyx Minimal Palette)
-const T = {
-  bg: "#09090b",
-  surface: "#121214",
-  surfaceHover: "#18181b",
-  border: "#27272a",
-  borderHover: "#3f3f46",
-  text: "#ededed",
-  textMuted: "#a1a1aa",
-  textHint: "#71717a",
-  accent: "#ffffff",
-  font: "var(--font-satoshi), system-ui, -apple-system, sans-serif",
-};
+import { T } from "./tokens";
 
 interface EmailPreviewCardProps {
   email: EmailPreview;
@@ -57,7 +45,7 @@ export default function EmailPreviewCard({ email, onSend, onCancel, onRefine, is
         animation: "fadeIn 0.3s ease-in-out"
       }}>
         <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
-          <div style={{ background: "rgba(161, 161, 170, 0.1)", color: T.textMuted, borderRadius: "50%", width: "24px", height: "24px", display: "flex", alignItems: "center", justifyContent: "center" }}>
+          <div style={{ background: T.surface, color: T.textMuted, borderRadius: "50%", width: "24px", height: "24px", display: "flex", alignItems: "center", justifyContent: "center" }}>
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
           </div>
           <span style={{ fontWeight: 600, fontSize: "15px", color: T.textMuted }}>Draft Cancelled</span>
@@ -75,10 +63,10 @@ export default function EmailPreviewCard({ email, onSend, onCancel, onRefine, is
         animation: "fadeIn 0.3s ease-in-out"
       }}>
         <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
-          <div style={{ background: "rgba(16, 185, 129, 0.1)", color: "#10b981", borderRadius: "50%", width: "24px", height: "24px", display: "flex", alignItems: "center", justifyContent: "center" }}>
+          <div style={{ background: "color-mix(in oklch, var(--pm-green) 12%, transparent)", color: "var(--pm-green)", borderRadius: "50%", width: "24px", height: "24px", display: "flex", alignItems: "center", justifyContent: "center" }}>
             ✓
           </div>
-          <span style={{ fontWeight: 600, fontSize: "15px", color: "#10b981" }}>Email Sent Successfully</span>
+          <span style={{ fontWeight: 600, fontSize: "15px", color: "var(--pm-green)" }}>Email Sent Successfully</span>
         </div>
         
         <div style={{ display: "grid", gridTemplateColumns: "80px 1fr", gap: "8px", fontSize: "14px", marginTop: "8px" }}>
@@ -121,11 +109,11 @@ export default function EmailPreviewCard({ email, onSend, onCancel, onRefine, is
               <button key={action}
                 onClick={() => onRefine(action, email)}
                 style={{
-                  padding: "4px 10px", background: "rgba(255,255,255,0.03)", border: `1px solid ${T.borderHover}`,
+                  padding: "4px 10px", background: T.card, border: `1px solid ${T.borderHover}`,
                   borderRadius: "12px", fontSize: "12px", color: T.textMuted, cursor: "pointer", transition: "all 0.2s"
                 }}
-                onMouseEnter={e => { e.currentTarget.style.color = T.accent; e.currentTarget.style.borderColor = T.textMuted; e.currentTarget.style.background = "rgba(255,255,255,0.08)"; }}
-                onMouseLeave={e => { e.currentTarget.style.color = T.textMuted; e.currentTarget.style.borderColor = T.borderHover; e.currentTarget.style.background = "rgba(255,255,255,0.03)"; }}
+                onMouseEnter={e => { e.currentTarget.style.color = T.accent; e.currentTarget.style.borderColor = T.textMuted; e.currentTarget.style.background = T.surface; }}
+                onMouseLeave={e => { e.currentTarget.style.color = T.textMuted; e.currentTarget.style.borderColor = T.borderHover; e.currentTarget.style.background = T.card; }}
               >
                 {action}
               </button>
@@ -184,7 +172,7 @@ export default function EmailPreviewCard({ email, onSend, onCancel, onRefine, is
         onChange={(e) => handleChange('body', e.target.value)}
         disabled={isSendingOrScheduled}
         style={{
-          marginTop: "8px", padding: "16px", background: "rgba(255,255,255,0.02)",
+          marginTop: "8px", padding: "16px", background: T.surface,
           border: `1px solid ${T.border}`, borderRadius: "8px", fontSize: "14px",
           lineHeight: "1.6", color: T.textMuted, width: "100%", boxSizing: "border-box",
           minHeight: "150px", resize: "vertical", fontFamily: T.font, outline: "none"
@@ -221,7 +209,7 @@ export default function EmailPreviewCard({ email, onSend, onCancel, onRefine, is
               }}
             >
               {isSendingOrScheduled && (
-                <div style={{ width: "14px", height: "14px", border: "2px solid rgba(0,0,0,0.2)", borderTopColor: "#000", borderRadius: "50%", animation: "spin 1s linear infinite" }} />
+                <div style={{ width: "14px", height: "14px", border: "2px solid color-mix(in oklch, currentColor 25%, transparent)", borderTopColor: "currentColor", borderRadius: "50%", animation: "spin 1s linear infinite" }} />
               )}
               {isSendingOrScheduled ? "Sending..." : "Approve & Send"}
             </button>

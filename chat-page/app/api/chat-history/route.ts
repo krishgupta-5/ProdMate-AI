@@ -77,6 +77,7 @@ export async function GET(req: Request) {
     const responsePayload = { 
       messages, 
       artifacts, 
+      title: sessionData?.title,
       notionUrl: sessionData?.notionUrl, 
       exportStatus: sessionData?.exportStatus,
       githubUrl: sessionData?.githubUrl,

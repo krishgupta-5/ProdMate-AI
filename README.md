@@ -314,9 +314,9 @@ ProdMate/
 │
 ├── landing-page/                  # Marketing portal, docs, pricing, and feature showcases (Port 3000)
 │   ├── src/
-│   │   ├── app/                   # Next.js App Router pages (/docs, /blog, /changelog)
-│   │   ├── components/            # High-end interactive visual components & pricing grid
-│   │   └── constants/             # Centralized routing & link definitions
+│   │   ├── pages/                 # React Router pages (/docs, /get-started, /contact, legal)
+│   │   ├── components/            # Landing sections, demos & UI primitives
+│   │   └── lib/                   # Site links (site.ts), legal copy & shared hooks
 │
 ├── chat-page/                     # Core AI workspace & blueprint generation dashboard (Port 3001)
 │   ├── app/

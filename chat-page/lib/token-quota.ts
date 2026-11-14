@@ -1,7 +1,9 @@
 import { db } from "@/lib/firebase-admin";
 
 const DAILY_TOKEN_LIMIT = 50_000;
-const QUOTA_TTL_MS = 0 * 60 * 60 * 1000;
+// Usage resets 24 hours after the window started (app/api/token-quota reports the same resetAt).
+// This was 0, which reset usage on every read, so the count never went up.
+const QUOTA_TTL_MS = 24 * 60 * 60 * 1000;
 
 export interface TokenQuota {
   userId: string;

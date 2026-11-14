@@ -6,11 +6,10 @@ services:
     working_dir: /app
     environment:
       - NODE_ENV=development
-      - NEXT_PUBLIC_CHAT_URL=http://localhost:3001/
+      - VITE_CHAT_URL=https://chat.prodmate.dev/
     volumes:
       - ./landing-page:/app
       - /app/node_modules
-      - /app/.next
     ports:
       - "3000:3000"
     command: npm run dev
