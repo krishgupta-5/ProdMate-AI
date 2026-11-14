@@ -14,7 +14,7 @@ export function Nav() {
     <header className="pointer-events-none fixed inset-x-0 top-3 z-40 px-3 sm:top-4 sm:px-6">
       <nav
         aria-label="Main"
-        className="pointer-events-auto relative mx-auto flex h-14 max-w-5xl items-center gap-3 rounded-full border border-white/60 bg-white/55 pr-1.5 pl-4 shadow-[0_1px_0_rgb(255_255_255/0.8)_inset,0_10px_30px_-12px_rgb(30_27_75/0.18),0_2px_6px_-2px_rgb(0_0_0/0.06)] ring-1 ring-black/[0.04] backdrop-blur-xl backdrop-saturate-150"
+        className="pointer-events-auto relative mx-auto flex h-14 max-w-5xl items-center gap-3 rounded-full border border-white/70 bg-white/80 pr-1.5 pl-4 shadow-[0_1px_0_rgb(255_255_255/0.8)_inset,0_10px_30px_-12px_rgb(30_27_75/0.18),0_2px_6px_-2px_rgb(0_0_0/0.06)] ring-1 ring-black/[0.04] backdrop-blur-xl backdrop-saturate-150"
       >
         <SiteLink
           href="/"

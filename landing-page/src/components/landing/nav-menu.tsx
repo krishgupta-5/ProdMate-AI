@@ -47,7 +47,10 @@ export function NavMenu({ items }: { items: { label: string; href: string }[] })
         id="nav-menu"
         aria-label="Site"
         inert={!open}
-        className={menuPanelClass(open, 'inset-x-0 top-full mt-2 bg-white/80 p-1.5 backdrop-blur-xl')}
+        className={menuPanelClass(
+          open,
+          'inset-x-0 top-full mt-2 bg-white p-1.5 shadow-[0_16px_40px_-12px_rgb(30_27_75/0.25)]',
+        )}
       >
         <ul className="flex flex-col">
           {items.map((item) => (

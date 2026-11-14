@@ -174,7 +174,7 @@ function SafariWindow({ url, children }: { url: string; children: ReactNode }) {
           <ChevronLeft />
           <ChevronRight className="text-black/20" />
         </div>
-        <div className="mx-auto flex h-7 w-full max-w-sm items-center justify-center gap-1.5 rounded-md bg-black/[0.05] px-3 text-[12px] text-black/70">
+        <div className="mx-auto flex h-7 w-full max-w-sm min-w-0 items-center justify-center gap-1.5 rounded-md bg-black/[0.05] px-3 text-[12px] text-black/70">
           <Lock aria-hidden className="size-3 shrink-0 text-black/45" />
           <AnimatePresence mode="wait" initial={false}>
             <m.span
@@ -183,7 +183,7 @@ function SafariWindow({ url, children }: { url: string; children: ReactNode }) {
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
               transition={{ duration: 0.2 }}
-              className="truncate"
+              className="min-w-0 truncate"
             >
               {url}
             </m.span>
