@@ -16,7 +16,7 @@ export function NavMenu({ items }: { items: { label: string; href: string }[] })
   const label = open ? 'Close menu' : 'Menu';
 
   return (
-    <div ref={root} className="md:hidden">
+    <div ref={root} className="lg:hidden">
       <button
         ref={toggle}
         type="button"

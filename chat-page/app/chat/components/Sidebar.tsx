@@ -641,6 +641,8 @@ export default function Sidebar({
           !isResizing && "transition-[width] duration-200 ease-[var(--ease-pm)]",
           // On small screens the open sidebar floats over the page.
           isOpen && "max-md:fixed max-md:inset-y-0 max-md:left-0 max-md:shadow-2xl",
+          // Closed on small screens: no icon rail, the top bar's menu button opens it instead.
+          !isOpen && "max-md:hidden",
         )}
         style={{ width: collapsed ? COLLAPSED_WIDTH : width }}
       >

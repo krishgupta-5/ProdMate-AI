@@ -893,7 +893,7 @@ export default function ChatPanel({
             <Crumb icon={<Lock />}>Shared project</Crumb>
           ) : (
             <Crumb icon={<FolderKanban />}>
-              <span className="max-w-[min(56vw,560px)] truncate" title={projectTitle}>{sessionId || isSharedView ? projectTitle : "New project"}</span>
+              <span className="max-w-[min(40vw,560px)] truncate sm:max-w-[min(56vw,560px)]" title={projectTitle}>{sessionId || isSharedView ? projectTitle : "New project"}</span>
             </Crumb>
           )
         }

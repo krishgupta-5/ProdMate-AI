@@ -1,8 +1,8 @@
 "use client";
 
 import React, { useEffect, useLayoutEffect, useState } from "react";
-import { useRouter } from "next/navigation";
-import { ChevronLeft } from "lucide-react";
+import { usePathname, useRouter } from "next/navigation";
+import { ChevronLeft, PanelLeft } from "lucide-react";
 import Sidebar from "./Sidebar";
 import LoginModal from "./LoginModal";
 import TokenUsage from "./TokenUsage";
@@ -20,6 +20,8 @@ const SIDEBAR_MAX = 420;
 const SIDEBAR_DEFAULT = 264;
 /** Dragging the edge left of this x (px) collapses the sidebar to its icon rail. */
 const SIDEBAR_COLLAPSE_AT = 150;
+/** TopBar's menu button fires this on phones, where the closed sidebar is hidden entirely. */
+const OPEN_SIDEBAR_EVENT = "pm-open-sidebar";
 
 /**
  * The app frame used by every signed-in page: the sidebar on the grey shell, and the page
@@ -48,6 +50,21 @@ export default function AppShell({
     const id = requestAnimationFrame(() => setReady(true));
     return () => cancelAnimationFrame(id);
   }, []);
+
+  useEffect(() => {
+    const open = () => setIsSidebarOpen(true);
+    window.addEventListener(OPEN_SIDEBAR_EVENT, open);
+    return () => window.removeEventListener(OPEN_SIDEBAR_EVENT, open);
+  }, []);
+
+  // On phones the open sidebar covers the page, so close it once a link in it is followed.
+  // Adjusted during render when the path changes (React's pattern for state that follows a value).
+  const pathname = usePathname();
+  const [lastPath, setLastPath] = useState(pathname);
+  if (pathname !== lastPath) {
+    setLastPath(pathname);
+    if (window.matchMedia("(max-width: 767px)").matches) setIsSidebarOpen(false);
+  }
 
   // Remember open/collapsed on desktop too.
   useEffect(() => {
@@ -151,9 +168,20 @@ export function TopBar({
   className?: string;
 }) {
   return (
-    <div className={cn("flex h-14 shrink-0 items-center justify-between gap-3 px-4", className)}>
-      <div className="flex min-w-0 items-center gap-2">{left}</div>
-      <div className="flex items-center gap-2">
+    <div className={cn("flex h-14 shrink-0 items-center justify-between gap-2 px-3 sm:gap-3 sm:px-4", className)}>
+      <div className="flex min-w-0 items-center gap-2">
+        <button
+          type="button"
+          onClick={() => window.dispatchEvent(new Event(OPEN_SIDEBAR_EVENT))}
+          title="Open menu"
+          aria-label="Open menu"
+          className="grid size-8 shrink-0 place-items-center rounded-lg border border-pm-line bg-pm-card text-pm-muted transition-colors hover:text-pm-fg md:hidden"
+        >
+          <PanelLeft className="size-4" />
+        </button>
+        {left}
+      </div>
+      <div className="flex shrink-0 items-center gap-1.5 sm:gap-2">
         {right}
         <TokenUsage />
       </div>

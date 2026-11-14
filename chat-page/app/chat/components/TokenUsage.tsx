@@ -3,6 +3,7 @@
 import React, { useEffect, useRef, useState } from "react";
 import { useUser } from "@clerk/nextjs";
 import { cn } from "@/lib/cn";
+import TokenBars, { type TokenDay } from "./TokenBars";
 
 export interface TokenQuota {
   tokensUsed: number;
@@ -10,6 +11,8 @@ export interface TokenQuota {
   tokensRemaining: number;
   exhausted: boolean;
   resetAt: number;
+  /** Tokens per day, oldest first. Only /api/token-quota sends it. */
+  history?: TokenDay[];
 }
 
 /** ChatPanel fires this with the fresh quota after each message, so the pill updates live. */
@@ -64,7 +67,8 @@ export default function TokenUsage() {
     load();
     const onUpdate = (e: Event) => {
       const detail = (e as CustomEvent<TokenQuota>).detail;
-      if (detail) setQuota(detail);
+      // Quota events from chat replies carry no history, so keep the one already loaded.
+      if (detail) setQuota((prev) => ({ ...detail, history: detail.history ?? prev?.history }));
       else load();
     };
     // ChatPanel fires "refresh-sessions" after every reply, including plain chat turns.
@@ -104,7 +108,7 @@ export default function TokenUsage() {
       </button>
 
       {open && (
-        <div className="absolute top-full right-0 z-[1000] mt-2 w-64 rounded-xl border border-pm-line bg-pm-card p-4 shadow-[0_12px_32px_-8px_rgba(0,0,0,0.18)] animate-in fade-in zoom-in-95 duration-100">
+        <div className="absolute top-full right-0 z-[1000] mt-2 w-[min(18rem,calc(100vw-1.5rem))] rounded-xl border border-pm-line bg-pm-card p-4 shadow-[0_12px_32px_-8px_rgba(0,0,0,0.18)] animate-in fade-in zoom-in-95 duration-100">
           <div className="text-xs font-medium tracking-wide text-pm-muted uppercase">Today&apos;s tokens</div>
           <div className="mt-3 h-1.5 overflow-hidden rounded-full bg-pm-shell">
             <div className={cn("h-full rounded-full", low ? "bg-pm-danger" : "bg-pm-primary")} style={{ width: `${pct}%` }} />
@@ -124,6 +128,7 @@ export default function TokenUsage() {
           <div className="mt-3 border-t border-pm-line pt-3 text-xs text-pm-muted">
             {quota.tokensLimit.toLocaleString()} per day · resets in {resetsIn(quota.resetAt)}
           </div>
+          <TokenBars history={quota.history ?? []} limit={quota.tokensLimit} className="mt-4 border-t border-pm-line pt-3" />
         </div>
       )}
     </div>

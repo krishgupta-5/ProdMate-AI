@@ -14,7 +14,7 @@ export function Nav() {
     <header className="pointer-events-none fixed inset-x-0 top-3 z-40 px-3 sm:top-4 sm:px-6">
       <nav
         aria-label="Main"
-        className="pointer-events-auto relative mx-auto flex h-14 max-w-5xl items-center gap-4 rounded-full border border-white/60 bg-white/55 pr-2 pl-5 shadow-[0_1px_0_rgb(255_255_255/0.8)_inset,0_10px_30px_-12px_rgb(30_27_75/0.18),0_2px_6px_-2px_rgb(0_0_0/0.06)] ring-1 ring-black/[0.04] backdrop-blur-xl backdrop-saturate-150"
+        className="pointer-events-auto relative mx-auto flex h-14 max-w-5xl items-center gap-3 rounded-full border border-white/60 bg-white/55 pr-1.5 pl-4 shadow-[0_1px_0_rgb(255_255_255/0.8)_inset,0_10px_30px_-12px_rgb(30_27_75/0.18),0_2px_6px_-2px_rgb(0_0_0/0.06)] ring-1 ring-black/[0.04] backdrop-blur-xl backdrop-saturate-150"
       >
         <SiteLink
           href="/"
@@ -23,7 +23,7 @@ export function Nav() {
         >
           <Logo />
         </SiteLink>
-        <div className="mx-auto hidden items-center gap-0.5 text-sm md:flex">
+        <div className="mx-auto hidden items-center gap-0.5 text-sm lg:flex">
           {navItems.map((item) => {
             const current = !item.href.includes('#') && pathname === item.href;
             return (
@@ -43,15 +43,19 @@ export function Nav() {
             );
           })}
         </div>
-        <div className="ml-auto flex shrink-0 items-center gap-1.5 md:ml-0">
+        <div className="ml-auto flex shrink-0 items-center gap-1 sm:gap-1.5 lg:ml-0">
           <ButtonLink
             href={links.login}
             variant="ghost"
-            className="hidden h-10 rounded-full px-4 md:inline-flex"
+            className="hidden h-10 rounded-full px-4 lg:inline-flex"
           >
             Log in
           </ButtonLink>
-          <ButtonLink href={links.app} variant="primary" className="h-10 rounded-full px-5">
+          <ButtonLink
+            href={links.app}
+            variant="primary"
+            className="h-10 rounded-full px-4 max-[359px]:h-9 max-[359px]:px-3 max-[359px]:text-[13px] sm:px-5"
+          >
             Start for free
           </ButtonLink>
           <NavMenu items={[...navItems, { label: 'Log in', href: links.login }]} />

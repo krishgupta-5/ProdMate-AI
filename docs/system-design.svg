@@ -1,0 +1,117 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 620" width="1200" height="620" font-family="-apple-system, 'Segoe UI', Inter, Helvetica, Arial, sans-serif">
+  <title>Prodmate system design</title>
+  <defs>
+    <marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M0 0 10 5 0 10z" fill="#8a8aa0"/>
+    </marker>
+    <linearGradient id="violet" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#7b6cf0"/>
+      <stop offset="1" stop-color="#5a4bd6"/>
+    </linearGradient>
+    <filter id="shadow" x="-10%" y="-10%" width="120%" height="130%">
+      <feDropShadow dx="0" dy="4" stdDeviation="6" flood-color="#1e1b4b" flood-opacity="0.08"/>
+    </filter>
+  </defs>
+
+  <!-- Page -->
+  <rect width="1200" height="620" rx="24" fill="#ffffff"/>
+  <rect x="0.5" y="0.5" width="1199" height="619" rx="24" fill="none" stroke="#e7e7ee"/>
+  <text x="48" y="62" font-size="24" font-weight="600" fill="#17171c">Prodmate · system design</text>
+  <text x="48" y="90" font-size="15" fill="#7a7a88">One idea in, a full development plan out, sent to the tools your team uses.</text>
+
+  <!-- Arrows (drawn first so boxes sit on top) -->
+  <g fill="none" stroke="#8a8aa0" stroke-width="2" marker-end="url(#arrow)">
+    <path d="M196 330 H262"/>
+    <path d="M420 262 V318" stroke-dasharray="6 5"/>
+    <path d="M580 400 H646"/>
+    <path d="M960 400 H1016"/>
+  </g>
+  <text x="432" y="296" font-size="12" fill="#7a7a88">Start planning</text>
+  <text x="590" y="388" font-size="12" fill="#7a7a88">prompt</text>
+  <text x="966" y="388" font-size="12" fill="#7a7a88">export</text>
+
+  <!-- You -->
+  <g filter="url(#shadow)">
+    <rect x="48" y="282" width="148" height="96" rx="18" fill="#f6f6f9" stroke="#e7e7ee"/>
+  </g>
+  <circle cx="122" cy="314" r="11" fill="none" stroke="#17171c" stroke-width="2"/>
+  <path d="M100 350 q22 -22 44 0" fill="none" stroke="#17171c" stroke-width="2" stroke-linecap="round"/>
+  <text x="122" y="370" font-size="14" font-weight="600" fill="#17171c" text-anchor="middle">You</text>
+
+  <!-- Landing page -->
+  <g filter="url(#shadow)">
+    <rect x="262" y="134" width="318" height="128" rx="18" fill="#ffffff" stroke="#e7e7ee"/>
+  </g>
+  <text x="286" y="170" font-size="12" font-weight="600" fill="#7a7a88" letter-spacing="1">WEBSITE</text>
+  <text x="286" y="198" font-size="18" font-weight="600" fill="#17171c">Landing page</text>
+  <text x="286" y="222" font-size="13" fill="#4f3fc4">prodmate.dev</text>
+  <text x="286" y="244" font-size="13" fill="#7a7a88">Vite · React · Tailwind · docs, pricing, legal</text>
+
+  <!-- Chat app -->
+  <g filter="url(#shadow)">
+    <rect x="262" y="318" width="318" height="164" rx="18" fill="url(#violet)"/>
+  </g>
+  <text x="286" y="354" font-size="12" font-weight="600" fill="#ffffff" fill-opacity="0.75" letter-spacing="1">APP</text>
+  <text x="286" y="382" font-size="18" font-weight="600" fill="#ffffff">Chat workspace</text>
+  <text x="286" y="406" font-size="13" fill="#ffffff" fill-opacity="0.9">chat.prodmate.dev</text>
+  <text x="286" y="430" font-size="13" fill="#ffffff" fill-opacity="0.8">Next.js · chat, artifacts, settings</text>
+  <text x="286" y="454" font-size="13" fill="#ffffff" fill-opacity="0.8">API routes · token quota</text>
+
+  <!-- Services under the app -->
+  <g fill="none" stroke="#8a8aa0" stroke-width="2" marker-end="url(#arrow)">
+    <path d="M330 482 V528"/>
+    <path d="M510 482 V528"/>
+  </g>
+  <g filter="url(#shadow)">
+    <rect x="262" y="530" width="140" height="56" rx="14" fill="#ffffff" stroke="#e7e7ee"/>
+    <rect x="440" y="530" width="140" height="56" rx="14" fill="#ffffff" stroke="#e7e7ee"/>
+  </g>
+  <text x="332" y="554" font-size="14" font-weight="600" fill="#17171c" text-anchor="middle">Clerk</text>
+  <text x="332" y="573" font-size="12" fill="#7a7a88" text-anchor="middle">sign-in</text>
+  <text x="510" y="554" font-size="14" font-weight="600" fill="#17171c" text-anchor="middle">Firebase</text>
+  <text x="510" y="573" font-size="12" fill="#7a7a88" text-anchor="middle">projects · usage</text>
+
+  <!-- AI pipelines -->
+  <g filter="url(#shadow)">
+    <rect x="646" y="134" width="314" height="452" rx="18" fill="#f6f6f9" stroke="#e7e7ee"/>
+  </g>
+  <text x="670" y="170" font-size="12" font-weight="600" fill="#7a7a88" letter-spacing="1">AI · GROQ</text>
+  <text x="670" y="198" font-size="18" font-weight="600" fill="#17171c">9 generation pipelines</text>
+  <text x="670" y="220" font-size="13" fill="#7a7a88">Each document is written on its own</text>
+  <g font-size="13" fill="#17171c">
+    <rect x="670" y="240" width="266" height="34" rx="10" fill="#ffffff" stroke="#e7e7ee"/>
+    <text x="686" y="262">Product requirements (PRD)</text>
+    <rect x="670" y="280" width="266" height="34" rx="10" fill="#ffffff" stroke="#e7e7ee"/>
+    <text x="686" y="302">Tech stack · architecture</text>
+    <rect x="670" y="320" width="266" height="34" rx="10" fill="#ffffff" stroke="#e7e7ee"/>
+    <text x="686" y="342">Database schema</text>
+    <rect x="670" y="360" width="266" height="34" rx="10" fill="#ffffff" stroke="#e7e7ee"/>
+    <text x="686" y="382">API design</text>
+    <rect x="670" y="400" width="266" height="34" rx="10" fill="#ffffff" stroke="#e7e7ee"/>
+    <text x="686" y="422">Folder structure</text>
+    <rect x="670" y="440" width="266" height="34" rx="10" fill="#ffffff" stroke="#e7e7ee"/>
+    <text x="686" y="462">Docker · CI/CD pipeline</text>
+    <rect x="670" y="480" width="266" height="34" rx="10" fill="#ffffff" stroke="#e7e7ee"/>
+    <text x="686" y="502">Testing plan</text>
+    <rect x="670" y="520" width="266" height="40" rx="10" fill="#ede9fe" stroke="#c9c1f7"/>
+    <text x="686" y="545" font-weight="600" fill="#4f3fc4">One combined blueprint</text>
+  </g>
+
+  <!-- Integrations -->
+  <g filter="url(#shadow)">
+    <rect x="1016" y="134" width="136" height="452" rx="18" fill="#ffffff" stroke="#e7e7ee"/>
+  </g>
+  <text x="1084" y="170" font-size="12" font-weight="600" fill="#7a7a88" letter-spacing="1" text-anchor="middle">YOUR TOOLS</text>
+  <g font-size="14" font-weight="600" text-anchor="middle">
+    <rect x="1036" y="196" width="96" height="56" rx="12" fill="#f6f6f9"/>
+    <text x="1084" y="229" fill="#17171c">GitHub</text>
+    <rect x="1036" y="264" width="96" height="56" rx="12" fill="#f6f6f9"/>
+    <text x="1084" y="297" fill="#17171c">Notion</text>
+    <rect x="1036" y="332" width="96" height="56" rx="12" fill="#eef3ff"/>
+    <text x="1084" y="365" fill="#0c66e4">Jira</text>
+    <rect x="1036" y="400" width="96" height="56" rx="12" fill="#fdeeee"/>
+    <text x="1084" y="433" fill="#d93025">Gmail</text>
+    <rect x="1036" y="468" width="96" height="56" rx="12" fill="#eef4fe"/>
+    <text x="1084" y="501" fill="#1a73e8">Calendar</text>
+  </g>
+</svg>

@@ -10,6 +10,7 @@ import { cn } from "@/lib/cn";
 import { useSmoothScroll } from "@/lib/use-smooth-scroll";
 
 import { LANDING_URL } from "@/lib/site";
+import TokenBars, { type TokenDay } from "../chat/components/TokenBars";
 
 type Tab = "profile" | "appearance" | "preferences" | "security" | "billing";
 
@@ -422,7 +423,12 @@ function SecuritySection() {
 }
 
 function BillingSection() {
-  const [tokenData, setTokenData] = useState<{ tokensUsed: number; tokensLimit: number; resetAt?: number } | null>(null);
+  const [tokenData, setTokenData] = useState<{
+    tokensUsed: number;
+    tokensLimit: number;
+    resetAt?: number;
+    history?: TokenDay[];
+  } | null>(null);
   const [loading, setLoading] = useState(true);
   const [resetMessage, setResetMessage] = useState("Usage details unavailable");
 
@@ -461,7 +467,7 @@ function BillingSection() {
         <Card className="flex flex-col p-6">
           <div className="text-xs font-medium tracking-wide text-pm-muted uppercase">Plan</div>
           <div className="mt-3 text-2xl font-semibold tracking-tight">Free</div>
-          <div className="mt-1 text-sm text-pm-muted">$0 / month during early access</div>
+          <div className="mt-1 text-sm text-pm-muted">Free for everyone during the beta</div>
           <a href={`${LANDING_URL}/#pricing`} className="mt-6">
             <Button variant="outline" size="sm">
               See plans
@@ -482,6 +488,16 @@ function BillingSection() {
             />
           </div>
           <div className="mt-3 text-xs text-pm-muted">{loading ? "Loading usage…" : resetMessage}</div>
+        </Card>
+
+        <Card className="p-6 lg:col-span-2">
+          <div className="mb-4 text-xs font-medium tracking-wide text-pm-muted uppercase">Daily usage</div>
+          <TokenBars
+            history={tokenData?.history ?? []}
+            limit={tokenData?.tokensLimit ?? 0}
+            days={90}
+            label="Tokens per day"
+          />
         </Card>
       </div>
     </Section>
