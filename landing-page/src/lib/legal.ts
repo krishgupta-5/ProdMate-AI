@@ -91,7 +91,7 @@ export const TERMS: LegalDoc = {
       id: 'description',
       title: 'Description of service',
       body: [
-        'ProdMate is a developer platform that provides AI-powered coding assistance, project management tools, and collaborative workspace features. The service is offered on a subscription basis with different tiers available.',
+        'ProdMate is a developer platform that provides AI-powered coding assistance, project management tools, and collaborative workspace features. The service is free while it is in beta.',
       ],
     },
     {
@@ -103,9 +103,10 @@ export const TERMS: LegalDoc = {
     },
     {
       id: 'payment',
-      title: 'Payment and subscription terms',
+      title: 'Pricing during the beta',
       body: [
-        'Subscription fees are charged in advance on a monthly or annual basis. All fees are non-refundable except as required by law. We reserve the right to change our subscription fees at any time with 30 days notice.',
+        'Prodmate is currently in beta and free to use. There is one plan, and it includes every feature and integration at no cost. We do not ask for payment details.',
+        'A daily usage allowance keeps the service fair for everyone. If we introduce paid plans in the future, we will tell you at least 30 days before any charge applies, and you can choose whether to continue.',
       ],
     },
     {
@@ -126,7 +127,7 @@ export const TERMS: LegalDoc = {
       id: 'availability',
       title: 'Service availability and support',
       body: [
-        'We strive to maintain high service availability but do not guarantee uninterrupted access. Support levels vary by subscription tier as described in our pricing page.',
+        'We strive to maintain high service availability but do not guarantee uninterrupted access. During the beta, support is provided by email on a best-effort basis.',
       ],
     },
     {
@@ -140,7 +141,7 @@ export const TERMS: LegalDoc = {
       id: 'termination',
       title: 'Termination',
       body: [
-        'We may terminate or suspend your account at any time for violation of these terms. You may cancel your subscription at any time through your account settings.',
+        'We may terminate or suspend your account at any time for violation of these terms. You may stop using the service and delete your account at any time through your account settings.',
       ],
     },
     {
