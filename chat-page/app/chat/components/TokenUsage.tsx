@@ -59,22 +59,39 @@ export default function TokenUsage() {
 
   useEffect(() => {
     if (!isSignedIn) return;
+    
     const load = () =>
       fetch("/api/token-quota", { cache: "no-store" })
         .then((r) => (r.ok ? r.json() : null))
-        .then((d) => d && setQuota(d))
-        .catch(() => {});
+        .then((d) => {
+          if (d) {
+            setQuota(d);
+          }
+        })
+        .catch((err) => {
+          console.error("Failed to load token quota:", err);
+        });
+    
+    // Load quota immediately on component mount
     load();
+    
     const onUpdate = (e: Event) => {
       const detail = (e as CustomEvent<TokenQuota>).detail;
       // Quota events from chat replies carry no history, so keep the one already loaded.
-      if (detail) setQuota((prev) => ({ ...detail, history: detail.history ?? prev?.history }));
-      else load();
+      if (detail) {
+        setQuota((prev) => ({ ...detail, history: detail.history ?? prev?.history }));
+      } else {
+        load();
+      }
     };
-    // ChatPanel fires "refresh-sessions" after every reply, including plain chat turns.
+    
+    // ChatPanel fires TOKEN_QUOTA_EVENT with fresh quota after each message
     window.addEventListener(TOKEN_QUOTA_EVENT, onUpdate);
+    // Also listen to refresh-sessions as fallback
     window.addEventListener("refresh-sessions", load);
+    // Reload quota when user returns to window
     window.addEventListener("focus", load);
+    
     return () => {
       window.removeEventListener(TOKEN_QUOTA_EVENT, onUpdate);
       window.removeEventListener("refresh-sessions", load);
